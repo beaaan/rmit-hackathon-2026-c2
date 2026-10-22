@@ -6,7 +6,7 @@ _Two-Person Rule: an AI watches a water plant around the clock and proposes urge
 
 Built with [TideCloak](https://tide.org/tidecloak?utm_source=github&utm_medium=readme&utm_campaign=unlocked).
 
-> **Draft.** This overview is a working draft and will be finalised once the prototype is built. See [`docs/PLAN.md`](docs/PLAN.md).
+> **Draft.** The prototype is built; this overview is finalised once TideCloak is connected. Progress is under [Status](#status) and in [`docs/PLAN.md`](docs/PLAN.md).
 
 ### 1. Vision & originality
 
@@ -58,6 +58,20 @@ and what TideCloak does here. The operators' control room is at `#/control-room`
 
 `npm run build:preview --prefix app` builds a static preview (`app/dist-preview/`) in which the
 controller, Sentinel and a stand-in sign-in service run inside the page.
+
+## Status
+
+- [x] Plant controller: runs a command only after two different operators approve, each verified from
+      their sign-in token; refuses direct execution; hash-chained audit log; 15 tests.
+- [x] Sentinel, the scripted AI: proposes a shutdown with its evidence and has no credentials. It obeys
+      instructions planted in its maintenance log, and the controller still refuses it.
+- [x] Landing page with the live 3D console, and the operators' control room.
+- [x] Every bypass is refused on screen: the prompt-injected AI, a forged operator pass, the admin
+      approving, one operator approving twice.
+- [x] Shareable static preview (`npm run build:preview --prefix app`).
+- [ ] TideCloak realm connected (today the app runs on a stand-in realm generated on your machine).
+- [ ] The admin's self-promotion held as a real TideCloak change request (built, simulated until then).
+- [ ] Final project overview (≤ 300 words) and the 2-minute video.
 
 Photographs and the clip on the page are from Wikimedia Commons, credited in the page footer and in
 `app/public/photos/credits.json`.

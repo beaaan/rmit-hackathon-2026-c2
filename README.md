@@ -47,14 +47,17 @@ npm run setup     # installs controller/ and app/
 npm run demo      # controller :4000, Sentinel, web app :3000
 ```
 
-Open http://localhost:3000. The page makes the case (an AI can ask, two people decide), shows real
+Open http://localhost:3000. Under the headline is the working prototype: a 3D console with the plant
+in the back (Line 3's pressure gauge, the two-key lock, the pump) and the five who can act in front,
+each standing over their own controls. Start a pressure spike so Sentinel proposes a shutdown, then
+try to get it run without two operators: trick Sentinel through its maintenance log, forge an
+operator's pass, have Jo the admin approve or promote himself, approve twice as Kim. The next move
+pulses; Raj's approval is the only thing that opens the lock. Below it: why plants keep AI out, real
 incidents of AI deceiving, escaping and being prompt-injected ([`docs/RESEARCH.md`](docs/RESEARCH.md)),
-and ends in **Try to break it**: the working prototype as six moves in any order. Start a pressure
-spike so Sentinel proposes a shutdown, then try to get it run without two operators: write your own
-trick into the log Sentinel reads, forge an operator's pass, have the IT admin approve, approve
-twice as one operator. A live panel shows the plant, the two keys, a count of bypass attempts and a
-running conversation of what Sentinel and the controller did. The operators' dashboard is at
-`#/control-room`.
+and what TideCloak does here. The operators' control room is at `#/control-room`.
+
+`npm run build:preview --prefix app` builds a static preview (`app/dist-preview/`) in which the
+controller, Sentinel and a stand-in sign-in service run inside the page.
 
 Photographs and the clip on the page are from Wikimedia Commons, credited in the page footer and in
 `app/public/photos/credits.json`.

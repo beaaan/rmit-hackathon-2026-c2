@@ -6,7 +6,7 @@ import { SignJWT, exportJWK, generateKeyPair } from "jose";
 
 export async function createLocalRealm({
   authServerUrl = "http://localhost:8080",
-  realm = "nextjs-test",
+  realm = "riverbend",
   client = "myclient",
 } = {}) {
   const { publicKey, privateKey } = await generateKeyPair("EdDSA", { crv: "Ed25519", extractable: true });

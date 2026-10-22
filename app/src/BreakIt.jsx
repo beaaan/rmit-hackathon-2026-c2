@@ -59,7 +59,7 @@ async function forgeToken(who) {
   } catch {}
   const now = Math.floor(Date.now() / 1000);
   const payload = {
-    iss: claims.iss ?? (TIDECLOAK_URL || "http://localhost:8080/realms/nextjs-test"),
+    iss: claims.iss ?? (TIDECLOAK_URL || "http://localhost:8080/realms/riverbend"),
     azp: claims.azp ?? "myclient",
     sub: crypto.randomUUID(),
     preferred_username: who,

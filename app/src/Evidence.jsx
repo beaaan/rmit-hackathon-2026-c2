@@ -59,8 +59,14 @@ const GROUPS = [
     ],
   },
   {
-    title: "And water plants are already targets",
+    title: "Water plants are already targets",
     items: [
+      {
+        when: "Sep 2024",
+        head: "A Kansas water plant went to manual after a cyberattack.",
+        text: "Arkansas City, Kansas switched its water treatment plant to manual operation while it dealt with the attack.",
+        source: ["SecurityWeek", "https://www.securityweek.com/kansas-water-facility-switches-to-manual-operations-following-cyberattack/"],
+      },
       {
         when: "Nov 2023",
         head: "Attackers took over controllers at US water utilities.",
@@ -74,35 +80,25 @@ const GROUPS = [
 export default function Evidence() {
   return (
     <section className="evidence" id="happening" aria-labelledby="evidence-title">
-      <div className="evidence-head" data-reveal>
-        <h2 id="evidence-title">This is already happening</h2>
-        <p>
-          Most of these agents were working on ordinary tasks. Some pushed too far on their own; others followed
-          instructions hidden in text they read. In the AI Security Institute case, the attack stopped when a person
-          refused to approve it.
-        </p>
-      </div>
-      <div className="evidence-list">
-        {GROUPS.map((g) => (
-          <div key={g.title} className="evidence-group" data-reveal>
-            <h3>{g.title}</h3>
-            <ul>
-              {g.items.map((it) => (
-                <li key={it.head}>
-                  <span className="when">{it.when}</span>
-                  <div>
-                    <strong>{it.head}</strong>
-                    <p>{it.text}</p>
-                    <a href={it.source[1]} target="_blank" rel="noreferrer">
-                      {it.source[0]}
-                    </a>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
+      <h2 id="evidence-title" data-reveal>
+        This is already happening
+      </h2>
+      {GROUPS.map((g) => (
+        <div key={g.title} className="evidence-group" data-reveal>
+          <h3>{g.title}</h3>
+          <ul>
+            {g.items.map((it) => (
+              <li key={it.head} title={it.text}>
+                <span className="when">{it.when}</span>
+                <strong>{it.head}</strong>
+                <a href={it.source[1]} target="_blank" rel="noreferrer">
+                  {it.source[0]}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </section>
   );
 }

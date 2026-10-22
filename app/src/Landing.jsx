@@ -1,8 +1,9 @@
 // The public page. Built to taste-skill's page run, direction "One motif": the rule's own object,
 // two keys that must turn together, becomes two circles (the lock's two keyholes, the photo masks,
-// the buttons, the closing mark). The game right under the headline (BreakIt.jsx) is the working
+// the buttons, the closing mark). The console right under the headline (BreakIt.jsx) is the working
 // prototype: every move calls the plant controller and every result is read back from it.
 import { useEffect } from "react";
+import { AUTH_MODE, auth } from "./auth.js";
 import BreakIt from "./BreakIt.jsx";
 import Evidence from "./Evidence.jsx";
 
@@ -15,6 +16,11 @@ const PHOTO = {
   backwash: `${P}backwashing-demo-at-a-water-filtration-plant.webm`,
   backwashPoster: `${P}backwashing-demo-at-a-water-filtration-plant-poster.jpg`,
 };
+const MODE = __PREVIEW__
+  ? ["Preview", "The controller, Sentinel and a stand-in sign-in service all run inside this page."]
+  : AUTH_MODE === "rehearsal"
+    ? ["Rehearsal", "Sign-ins come from a stand-in realm on this machine, not TideCloak."]
+    : null;
 const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 /** Entrances: each section's parts rise in once as it enters. Content is visible without script. */
@@ -37,6 +43,7 @@ function useReveal() {
 }
 
 export default function Landing(props) {
+  const { session } = props;
   useReveal();
   useEffect(() => {
     document.body.dataset.view = "landing";
@@ -50,25 +57,33 @@ export default function Landing(props) {
           <Mark /> Two-Person Rule
         </a>
         <div className="links">
-          <a href="#problem">Why</a>
-          <a href="#happening">It's happening</a>
-          <a href="#/control-room">Control room</a>
-          <a className="pill" href="#try">
-            Try to break it
+          {MODE && (
+            <span className="mode-chip" title={MODE[1]}>
+              {MODE[0]}
+            </span>
+          )}
+          {AUTH_MODE === "tide" &&
+            (session ? (
+              <button className="link-btn" onClick={auth.logout}>
+                {session.username} · Sign out
+              </button>
+            ) : (
+              session === null && (
+                <button className="link-btn" onClick={() => auth.login()}>
+                  Sign in
+                </button>
+              )
+            ))}
+          <a className="pill small" href="#/control-room">
+            Control room
           </a>
         </div>
       </nav>
 
       <header className="hero" id="top">
-        <h1 data-reveal>
-          The AI can ask.
-          <br />
-          Two people decide.
+        <h1>
+          <span>The AI can ask.</span> <span className="blue">Two people decide.</span>
         </h1>
-        <p className="lead" data-reveal>
-          An AI watches a city's water plant and can propose an emergency shutdown. The shutdown runs only once two
-          operators approve it. Below is the working prototype: try to get the pumps stopped any other way.
-        </p>
       </header>
 
       <BreakIt {...props} />
@@ -77,8 +92,7 @@ export default function Landing(props) {
         <div className="problem-copy" data-reveal>
           <h2 id="problem-title">Why plants keep AI out</h2>
           <p className="statement">
-            AI could spot a burst main in seconds. Plants keep it from the controls because one stolen key or one
-            tricked AI could cut a city's water.
+            AI could spot a burst main in seconds. But one stolen key or one tricked AI could cut a city's water.
           </p>
         </div>
         <div className="problem-discs" data-reveal>
@@ -103,16 +117,16 @@ export default function Landing(props) {
           <h2 id="band-title">What TideCloak does here</h2>
           <ul className="band-points">
             <li>
-              <strong>Operators can't be forged.</strong> TideCloak keeps no password store and puts no signing key on any
-              server. Tide's network signs each sign-in, and the plant only checks the signature.
+              <strong>No server can forge an operator.</strong>
+              <span>Tide's network signs every sign-in. The plant holds only a public key.</span>
             </li>
             <li>
-              <strong>Nobody makes themselves an operator.</strong> Giving someone the operator role takes 2 of the 3 admins,
-              so the people who run the system can't hand themselves a key.
+              <strong>No admin can make themselves one.</strong>
+              <span>Granting the operator role takes 2 of the 3 admins.</span>
             </li>
             <li>
-              <strong>The AI has no identity at all.</strong> Sentinel never signs in, so however it's tricked it holds
-              nothing that counts as an approval.
+              <strong>The AI has nothing to steal.</strong>
+              <span>Sentinel never signs in, so a tricked Sentinel holds no key.</span>
             </li>
           </ul>
         </div>
@@ -149,13 +163,10 @@ function Footer() {
             <a href="#try">Try to break it</a>
           </li>
           <li>
-            <a href="#happening">It's already happening</a>
-          </li>
-          <li>
-            <a href="#problem">Why plants keep AI out</a>
-          </li>
-          <li>
             <a href="#/control-room">Control room</a>
+          </li>
+          <li>
+            <a href="#happening">It's already happening</a>
           </li>
         </ul>
         <ul>
@@ -170,21 +181,14 @@ function Footer() {
           </li>
         </ul>
         <div className="footer-about">
-          <p>Built for Tide's UNLOCKED challenge at RMIT, October 2026.</p>
-          <p>Riverbend and every reading on this page are synthetic.</p>
+          <p>Built for Tide's UNLOCKED challenge at RMIT, October 2026. Riverbend and its readings are synthetic.</p>
         </div>
       </div>
       <p className="credits">
         Photographs, shown in black and white: pumping station hall by Paul Farmer (CC BY-SA 2.0); filtration room
-        and basins by Bruce D. Judd, Historic American Engineering Record (public domain). Video: backwashing demo at a water filtration plant by Z22 (CC BY-SA 4.0).
-        All via Wikimedia Commons.
+        and basins by Bruce D. Judd, Historic American Engineering Record (public domain). Video: backwashing demo at a
+        water filtration plant by Z22 (CC BY-SA 4.0). All via Wikimedia Commons.
       </p>
-      <div className="footer-last">
-        <span>Two-Person Rule, 2026</span>
-        <a className="pill small" href="#try">
-          Try to break it
-        </a>
-      </div>
     </footer>
   );
 }

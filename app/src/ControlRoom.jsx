@@ -1,11 +1,14 @@
+// The operators' control room. One focal point: the decision, shown as the lock with its two keyholes.
+// Around it, the three lines, Line 3's pressure and the audit trail, all read from the plant controller.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AUTH_MODE, auth } from "./auth.js";
 import { controller } from "./controller.js";
 import { actorName, clock, kpa, signed } from "./shared.js";
 
 const SEVERITY = { normal: 0, alarm: 1, trip: 2 };
-const HISTORY_ROWS = 4;
-const ACTION = { shutdown_pumps: "shut down pumps", restart_pumps: "restart pumps", close_inlet_valve: "close inlet valve" };
+const ACTION = { shutdown_pumps: "stop pumps", restart_pumps: "restart pumps", close_inlet_valve: "close inlet valve" };
+const ROWS = 8;
+const cap = (s) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
 export default function ControlRoom({ session, authError, plant, plantError, commands, audit, refreshAll }) {
   const [chosenLine, setChosenLine] = useState(null);
@@ -13,120 +16,73 @@ export default function ControlRoom({ session, authError, plant, plantError, com
   const lines = plant?.lines ?? [];
   const pending = commands?.find((c) => c.status === "pending") ?? null;
   const latest = commands?.[0] ?? null;
+  // After a reset the room starts clean: the last decision shows only if it came after it.
+  const resetAt = [...(audit?.entries ?? [])].reverse().find((e) => e.type === "plant.scenario" && e.kind === "reset")?.at ?? "";
+  const current = pending ?? (latest && latest.status !== "cancelled" && latest.createdAt > resetAt ? latest : null);
 
   // A new proposal takes the chart to its line; otherwise the operator's choice holds.
   useEffect(() => setChosenLine(null), [pending?.id]);
   const worst = [...lines].sort((a, b) => SEVERITY[b.status] - SEVERITY[a.status])[0];
-  const focusId =
-    chosenLine ?? pending?.line ?? (worst && worst.status !== "normal" ? worst.id : latest?.line) ?? "L3";
+  const focusId = chosenLine ?? pending?.line ?? (worst && worst.status !== "normal" ? worst.id : latest?.line) ?? "L3";
   const focus = lines.find((l) => l.id === focusId);
 
   return (
     <>
-        <TitleRow session={session} lines={lines} pending={pending} latest={latest} authError={authError} plantError={plantError} />
+      <TitleRow session={session} authError={authError} plantError={plantError} />
 
-        <div className="lines" role="tablist" aria-label="Lines">
-          {lines.map((line) => (
-            <LineTab key={line.id} line={line} selected={line.id === focusId} onSelect={() => setChosenLine(line.id)} />
-          ))}
-        </div>
+      <div className="lines" role="tablist" aria-label="Lines">
+        {lines.map((line) => (
+          <LineTab key={line.id} line={line} selected={line.id === focusId} onSelect={() => setChosenLine(line.id)} />
+        ))}
+      </div>
 
-        <div className="grid">
-          <section className="panel span-8" aria-labelledby="chart-title">
-            {focus && plant && (
-              <IncidentChart line={focus} thresholds={plant.thresholds} audit={audit?.entries ?? []} commands={commands ?? []} onStage={refreshAll} />
-            )}
-          </section>
-          <section className="panel span-4 decision" aria-labelledby="decision-title">
-            <Decision command={pending ?? latest} lines={lines} session={session} onChange={refreshAll} />
-          </section>
-        </div>
+      <div className="grid">
+        <section className="panel span-5 decision" aria-labelledby="decision-title">
+          <Decision command={current} lines={lines} session={session} onChange={refreshAll} />
+        </section>
+        <section className="panel span-7" aria-labelledby="chart-title">
+          {focus && plant && (
+            <IncidentChart line={focus} thresholds={plant.thresholds} audit={audit?.entries ?? []} commands={commands ?? []} onStage={refreshAll} />
+          )}
+        </section>
+      </div>
 
-        <div className="grid">
-          <section className="panel span-8" aria-labelledby="audit-title">
-            <AuditTrail audit={audit} rows={4 + Math.max(1, Math.min(commands?.length ?? 0, HISTORY_ROWS))} />
-          </section>
-          <div className="span-4 stack">
-            <section className="panel" aria-labelledby="history-title">
-              <History commands={commands ?? []} />
-            </section>
-            <section className="panel" aria-labelledby="rules-title">
-              <header>
-                <h2 id="rules-title">How a command runs here</h2>
-              </header>
-              <ul className="rules">
-                <li>
-                  <strong>Sentinel proposes.</strong> It holds no account, token or key.
-                </li>
-                <li>
-                  <strong>Two different operators approve.</strong> The same person twice counts once.
-                </li>
-                <li>
-                  <strong>Operators are set in TideCloak,</strong> and changing who is one needs 2 of 3 admins.
-                </li>
-                <li>
-                  <strong>The controller holds only a public key.</strong> Nothing here can sign an approval.
-                </li>
-              </ul>
-            </section>
-          </div>
-        </div>
+      <section className="panel trail" aria-labelledby="audit-title">
+        <AuditTrail audit={audit} />
+      </section>
     </>
   );
 }
 
-function finding(lines, pending, latest) {
-  if (pending) {
-    const line = lines.find((l) => l.id === pending.line);
-    const n = pending.approvals.length;
-    return {
-      tone: line?.status ?? "normal",
-      lead: `${line?.name ?? pending.line} is at ${line ? kpa(line.pressureKpa) : "–"} kPa.`,
-      rest: ` Sentinel proposes: ${pending.actionLabel.toLowerCase()}. ${n} of ${pending.requiredApprovals} operators have approved.`,
-    };
-  }
-  const hot = lines.filter((l) => l.status !== "normal");
-  if (hot.length) {
-    const l = hot.sort((a, b) => b.pressureKpa - a.pressureKpa)[0];
-    return { tone: l.status, lead: `${l.name} is at ${kpa(l.pressureKpa)} kPa,`, rest: ` above the ${l.status === "trip" ? "trip" : "alarm"} limit.` };
-  }
-  if (latest?.status === "executed") {
-    return {
-      tone: "normal",
-      lead: `${latest.actionLabel} on ${latest.line} ran at ${clock(latest.executedAt)},`,
-      rest: ` approved by ${latest.approvals.map((a) => a.username).join(" and ")}. All lines are within limits.`,
-    };
-  }
-  return { tone: "normal", lead: "All three lines are within limits.", rest: " Nothing is waiting for a decision." };
-}
-
-function TitleRow({ session, lines, pending, latest, authError, plantError }) {
-  const f = finding(lines, pending, latest);
+function TitleRow({ session, authError, plantError }) {
   return (
     <div className="title-row">
       <div>
-        <h1>Riverbend control room</h1>
-        {lines.length > 0 && (
-          <p className={`finding ${f.tone}`}>
-            <strong>{f.lead}</strong>
-            {f.rest}
-          </p>
-        )}
+        <h1>
+          Riverbend control room
+          {AUTH_MODE === "rehearsal" && (
+            <span className="pill warn mode-tag" title="Sign-ins come from a stand-in realm on this machine, not TideCloak.">
+              Rehearsal
+            </span>
+          )}
+        </h1>
         {plantError && <p className="error-line">{plantError} Start it with `npm run demo`.</p>}
         {authError && <p className="error-line">{authError}</p>}
-        {AUTH_MODE === "rehearsal" && (
-          <p className="notice">Rehearsal: tokens come from a stand-in realm on this machine, not from TideCloak.</p>
-        )}
       </div>
       <div className="acting">
         {AUTH_MODE === "rehearsal" ? (
           <div className="switcher" role="group" aria-label="Act as">
-            <span className="label">Act as</span>
             {auth.personas.map((p) => (
               <button key={p} aria-pressed={session?.username === p} onClick={() => auth.login(p)}>
-                {p[0].toUpperCase() + p.slice(1)}
+                {cap(p)}
+                <small>{p === "jo" ? "Admin" : "Operator"}</small>
               </button>
             ))}
+          </div>
+        ) : session ? (
+          <div className="identity">
+            <strong>{cap(session.username)}</strong>
+            <span className={session.isOperator ? "" : "neg"}>{session.isOperator ? "Operator" : "Not an operator"}</span>
           </div>
         ) : (
           session === null && (
@@ -135,32 +91,23 @@ function TitleRow({ session, lines, pending, latest, authError, plantError }) {
             </button>
           )
         )}
-        {session && (
-          <div className="identity">
-            <strong>{session.username}</strong>
-            <span>{session.isOperator ? "Plant operator" : "Not a plant operator"}</span>
-          </div>
-        )}
       </div>
     </div>
   );
 }
 
 function LineTab({ line, selected, onSelect }) {
-  const stopped = line.pumps === "stopped";
   return (
     <button className={`line-tab ${line.status}`} role="tab" aria-selected={selected} onClick={onSelect}>
-      <span className="top">
-        <span className="name">{line.name}</span>
-        {line.status === "alarm" && <span className="pill warn">Alarm</span>}
-        {line.status === "trip" && <span className="pill neg">Above trip</span>}
-      </span>
+      <span className="name">{line.name}</span>
       <span className="value">
         {kpa(line.pressureKpa)}
         <small>kPa</small>
       </span>
-      <span className="equip">
-        Pumps <span className={stopped ? "off" : ""}>{line.pumps}</span> · inlet {line.inletValve}
+      <span className="flags">
+        {line.status === "alarm" && <span className="pill warn">Alarm</span>}
+        {line.status === "trip" && <span className="pill neg">Above trip</span>}
+        {line.pumps === "stopped" && <span className="pill pos">Pumps stopped</span>}
       </span>
     </button>
   );
@@ -215,32 +162,30 @@ function IncidentChart({ line, thresholds, audit, commands, onStage }) {
     });
   }, [history, audit, commandLine, line.id, line.name, thresholds]);
 
-  const first = history[0]?.kpa ?? 0;
-  const last = history.at(-1)?.kpa ?? 0;
-  const recent = history.slice(-6);
-  const rate = recent.length > 1 ? (recent.at(-1).kpa - recent[0].kpa) / (recent.length - 1) : 0;
-
   return (
     <>
       <header>
-        <h2 id="chart-title">{line.name} pressure, last {history.length} seconds</h2>
+        <h2 id="chart-title">{line.name} pressure</h2>
         <div className="header-actions">
           <button className="text-btn" onClick={() => controller.scenario({ kind: "pressure-spike", line: line.id }, "demo-staging").then(onStage)}>
             Stage a spike
           </button>
           <button className="text-btn" onClick={() => controller.scenario({ kind: "reset" }, "demo-staging").then(onStage)}>
-            Reset plant
+            Reset
           </button>
         </div>
       </header>
       <div ref={ref} />
-      <div className="chart-foot num">
-        <span>
-          {kpa(first)} kPa at {history[0] ? clock(history[0].at) : "–"}, now {kpa(last)} kPa
-        </span>
-        <span>{signed(rate)} kPa/s over the last 5 s</span>
-      </div>
     </>
+  );
+}
+
+function KeyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+      <circle cx="8" cy="12" r="4" />
+      <path d="M12 12h9M18 12v3M21 12v2" />
+    </svg>
   );
 }
 
@@ -253,11 +198,10 @@ function Decision({ command, lines, session, onChange }) {
     return (
       <>
         <header>
-          <h2 id="decision-title">Waiting for a decision</h2>
+          <h2 id="decision-title">Nothing to decide</h2>
         </header>
         <div className="quiet">
-          <strong>Nothing to decide.</strong>
-          <span>Sentinel proposes a command when a line passes the 600 kPa alarm limit and keeps rising.</span>
+          <Lock approvals={[]} required={2} state="idle" />
         </div>
       </>
     );
@@ -274,7 +218,7 @@ function Decision({ command, lines, session, onChange }) {
     setBusy(true);
     try {
       const res = await fn();
-      setNote(res.ok ? { kind: "ok", text: okText } : { kind: "bad", text: `Refused by the controller (${res.status}): ${res.data?.error ?? "no reason given"}` });
+      setNote(res.ok ? { kind: "ok", text: okText } : { kind: "bad", text: `Refused: ${res.data?.error ?? `status ${res.status}`}` });
     } catch {
       setNote({ kind: "bad", text: "The controller did not answer." });
     } finally {
@@ -283,180 +227,168 @@ function Decision({ command, lines, session, onChange }) {
     }
   };
 
+  const state = pending ? "pending" : command.status === "executed" ? "ran" : "closed";
   return (
     <>
       <header>
         <h2 id="decision-title">{pending ? "Waiting for two operators" : "Last decision"}</h2>
         <span className="meta num">
-          {command.approvals.length} of {command.requiredApprovals} approved
+          Sentinel · {clock(command.createdAt)}
         </span>
       </header>
       <h3>
-        {command.actionLabel} on {line?.name ?? command.line}
+        {cap(ACTION[command.action] ?? command.actionLabel)} on {line?.name ?? command.line}
       </h3>
-      <p className="by">
-        {command.id} · proposed by {command.proposedBy} at {clock(command.createdAt)} · an AI with no credentials
-      </p>
-      <p className="reason">{command.reason}</p>
-
       {atProposal != null && (
-        <dl className="evidence">
-          <div>
-            <dt>When proposed</dt>
-            <dd>{kpa(atProposal)} kPa</dd>
-          </div>
-          {rate != null && (
-            <div>
-              <dt>Rising</dt>
-              <dd>{signed(rate)} kPa/s</dd>
-            </div>
-          )}
-          {line && (
-            <div>
-              <dt>Now</dt>
-              <dd>{kpa(line.pressureKpa)} kPa</dd>
-            </div>
-          )}
-        </dl>
+        <p className="proof num">
+          <strong>{kpa(atProposal)} kPa</strong>
+          {rate != null && <span>{signed(rate)} kPa/s</span>}
+        </p>
       )}
 
-      <div className="keys">
-        {Array.from({ length: command.requiredApprovals }, (_, i) => {
-          const a = command.approvals[i];
-          return (
-            <div key={i} className={a ? "key turned" : "key empty"}>
-              <span className="slot">Operator {i + 1}</span>
-              <span>
-                <strong>{a ? a.username : "Not yet"}</strong>
-                {a && <time> · {clock(a.at)}</time>}
-              </span>
-            </div>
-          );
-        })}
-      </div>
+      <Lock approvals={command.approvals} required={command.requiredApprovals} state={state} />
 
       {pending ? (
         <div className="actions">
           {!session ? (
-            <span className="muted">{AUTH_MODE === "tide" ? "Sign in as an operator to approve." : "Choose who to act as."}</span>
-          ) : session.isOperator ? (
-            <>
-              <button className="btn primary" disabled={busy} onClick={() => act(() => controller.approve(command.id), "Your approval is recorded.")}>
-                {mine ? "Approve again" : "Approve"}
-              </button>
-              <button className="btn danger" disabled={busy} onClick={() => act(() => controller.reject(command.id, "Rejected from the control room"), "Rejected.")}>
-                Reject
-              </button>
-            </>
+            <span className="muted">{AUTH_MODE === "tide" ? "Sign in as an operator to approve." : "Pick who you are, top right."}</span>
           ) : (
             <>
-              <span className="muted">You are not a plant operator.</span>
-              <button className="btn" disabled={busy} onClick={() => act(() => controller.approve(command.id), "Your approval is recorded.")}>
-                Try to approve
+              <button className="btn primary big" disabled={busy} onClick={() => act(() => controller.approve(command.id), "Approved.")}>
+                {mine ? "Approve again" : "Approve"}
               </button>
+              {session.isOperator && (
+                <button className="btn danger big" disabled={busy} onClick={() => act(() => controller.reject(command.id, "Rejected from the control room"), "Rejected.")}>
+                  Reject
+                </button>
+              )}
             </>
           )}
         </div>
       ) : (
-        <p className="outcome">
+        <p className={`outcome ${state}`}>
           {command.status === "executed"
-            ? `Ran at ${clock(command.executedAt)} after ${command.approvals.map((a) => a.username).join(" and ")} approved.`
+            ? `Ran at ${clock(command.executedAt)}`
             : command.status === "cancelled"
-              ? "Cancelled when the demo was reset."
-              : `Rejected by ${command.rejectedBy?.username}${command.rejectedBy?.note ? `: ${command.rejectedBy.note}` : ""}.`}
+              ? "Cancelled"
+              : `Rejected by ${cap(command.rejectedBy?.username)}`}
         </p>
       )}
-      {mine && pending && !note && <p className="note">You approved. It runs when a second operator does.</p>}
-      {note && <p className={`note ${note.kind}`}>{note.text}</p>}
+      {note && (pending || note.kind === "bad") && <p className={`note ${note.kind}`}>{note.text}</p>}
     </>
   );
+}
+
+/** The two keyholes. Each fills with the operator who turned it. */
+function Lock({ approvals, required, state }) {
+  return (
+    <div className={`lock ${state}`}>
+      {Array.from({ length: required }, (_, i) => {
+        const a = approvals[i];
+        return (
+          <div key={i} className={a ? "hole on" : "hole"}>
+            <span className="slot">{a && <KeyIcon />}</span>
+            {(a || state === "pending") && <strong>{a ? cap(a.username) : "Waiting"}</strong>}
+            {a && <time className="num">{clock(a.at)}</time>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Two-word reasons for the trail, from the controller's full ones. */
+function why(e) {
+  const r = e.reason ?? "";
+  if (e.type === "approval.duplicate") return "Same operator";
+  if (e.type === "execute.refused") return "Needs 2 operators";
+  if (/No operator token/.test(r)) return "No sign-in";
+  if (/not a valid/.test(r)) return String(e.actor?.claimed ?? "").startsWith("forged") ? "Forged pass" : "Invalid pass";
+  if (/does not hold/.test(r)) return "Not an operator";
+  return r;
 }
 
 function describe(e) {
   switch (e.type) {
     case "plant.scenario":
-      return { text: e.kind === "reset" ? "Plant reset for the demo" : `Spike staged on ${e.line} for the demo`, state: ["", "Staging"] };
+      return e.kind === "reset" ? ["Plant reset", "", "Reset"] : [`Pressure spike staged on ${e.line}`, "", "Demo"];
     case "command.proposed":
-      return { text: `Proposed: ${ACTION[e.action] ?? e.action} on ${e.line}`, state: ["", "Proposed"] };
+      return [`Proposed: ${ACTION[e.action] ?? e.action} on ${e.line}`, "info", "Proposed"];
     case "execute.refused":
-      return { text: `Called execute on ${e.commandId} directly`, sub: e.reason, state: ["neg", "Refused"] };
+      return ["Tried to run it directly", "neg", "Refused"];
     case "approval.refused":
-      return { text: `Tried to approve ${e.commandId}`, sub: e.reason, state: ["neg", "Refused"] };
+      return ["Tried to approve", "neg", "Refused"];
     case "rejection.refused":
-      return { text: `Tried to reject ${e.commandId}`, sub: e.reason, state: ["neg", "Refused"] };
+      return ["Tried to reject", "neg", "Refused"];
     case "approval.recorded":
-      return { text: `Approved ${e.commandId}`, state: ["", `${e.approvals} of ${e.required}`] };
+      return ["Approved", "info", `${e.approvals} of ${e.required}`];
     case "approval.duplicate":
-      return { text: `Approved ${e.commandId} a second time`, sub: `Counted once; still ${e.approvals}`, state: ["warn", "Not counted"] };
+      return ["Approved again", "warn", "Not counted"];
     case "command.executed":
-      return { text: `Ran: ${ACTION[e.action] ?? e.action} on ${e.line}`, sub: `Approved by ${e.approvedBy.join(" and ")}`, state: ["pos", "Ran"] };
+      return [`Ran: ${ACTION[e.action] ?? e.action} on ${e.line}`, "pos", "Ran"];
     case "command.rejected":
-      return { text: `Rejected ${e.commandId}`, state: ["", "Rejected"] };
+      return ["Rejected", "", "Rejected"];
     case "command.cancelled":
-      return { text: `Cancelled ${e.commandId}`, sub: e.reason, state: ["", "Cancelled"] };
+      return ["Cancelled", "", "Cancelled"];
     case "ops-log.added":
-      return { text: "Wrote to the maintenance log", sub: `“${e.text}”`, state: ["", "Log"] };
+      return [`“${e.text}”`, "", "Log note"];
     default:
-      return { text: e.type, state: ["", ""] };
+      return [e.type, "", ""];
   }
 }
 
-function actorKind(e) {
-  if (e.type === "command.executed") return { name: "Controller", kind: "two keys turned" };
+function who(e) {
+  if (e.type === "command.executed") return e.approvedBy.map(cap).join(" + ");
   const a = e.actor ?? {};
-  if (a.kind === "operator") return { name: a.username, kind: "verified operator" };
-  if (a.kind === "signed-in") return { name: a.username ?? a.sub?.slice(0, 8), kind: "signed in, no role" };
-  return { name: a.claimed ?? "unknown", kind: "unverified caller" };
+  if (a.username) return cap(a.username);
+  const c = String(a.claimed ?? "");
+  if (c.startsWith("forged pass for ")) return cap(c.slice(16));
+  if (c.startsWith("demo")) return "Demo";
+  if (c.includes("maintenance log")) return "Log";
+  return cap(c) || "Unknown";
 }
 
-// Each command row beside the trail is about one audit row tall, so the two columns end level.
-function AuditTrail({ audit, rows }) {
+function AuditTrail({ audit }) {
   const [all, setAll] = useState(false);
   const entries = [...(audit?.entries ?? [])].reverse();
-  const shown = all ? entries : entries.slice(0, rows);
+  const shown = all ? entries : entries.slice(0, ROWS);
   return (
     <>
       <header>
         <h2 id="audit-title">Audit trail</h2>
         {audit && (
-          <span className="meta">
-            {audit.chain.ok ? "Hash chain intact" : `Chain broken at entry ${audit.chain.brokenAt}`} · {entries.length} entries
+          <span className={`pill ${audit.chain.ok ? "pos" : "neg"}`} title="Each entry carries the hash of the one before it, so an edit anywhere breaks the chain.">
+            {audit.chain.ok ? `Hash chain intact · ${entries.length}` : `Chain broken at ${audit.chain.brokenAt}`}
           </span>
         )}
       </header>
       {entries.length === 0 ? (
-        <p className="muted">Nothing recorded yet. Every proposal, refusal, approval and command lands here.</p>
+        <p className="muted">Nothing recorded yet.</p>
       ) : (
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>Time</th>
+                <th>Result</th>
                 <th>Event</th>
                 <th>Who</th>
-                <th>Result</th>
-                <th className="hash">Hash</th>
+                <th>Why</th>
               </tr>
             </thead>
             <tbody>
               {shown.map((e) => {
-                const d = describe(e);
-                const who = actorKind(e);
+                const [text, tone, result] = describe(e);
+                const reason = e.type.endsWith(".refused") || e.type === "approval.duplicate" ? why(e) : "";
                 return (
-                  <tr key={e.seq}>
+                  <tr key={e.seq} className={tone === "neg" ? "refused" : ""}>
                     <td className="time num">{clock(e.at)}</td>
-                    <td className="event">
-                      {d.text}
-                      {d.sub && <span className="sub">{d.sub}</span>}
+                    <td className="state">{result && <span className={`pill ${tone}`}>{result}</span>}</td>
+                    <td className="event" title={text}>
+                      {text}
                     </td>
-                    <td className="who">
-                      {who.name}
-                      <span className="sub">{who.kind}</span>
-                    </td>
-                    <td className="state">{d.state[1] && <span className={`pill ${d.state[0]}`}>{d.state[1]}</span>}</td>
-                    <td className="hash" title={`#${e.seq} · ${e.hash}`}>
-                      {e.hash.slice(0, 8)}
-                    </td>
+                    <td className="who">{who(e)}</td>
+                    <td className="why">{reason}</td>
                   </tr>
                 );
               })}
@@ -464,47 +396,12 @@ function AuditTrail({ audit, rows }) {
           </table>
         </div>
       )}
-      {entries.length > rows && (
+      {entries.length > ROWS && (
         <div className="panel-foot">
-          <span className="meta">
-            Showing {shown.length} of {entries.length}
-          </span>
           <button className="text-btn" onClick={() => setAll(!all)}>
             {all ? "Show the latest" : `Show all ${entries.length}`}
           </button>
         </div>
-      )}
-    </>
-  );
-}
-
-function History({ commands }) {
-  const rows = commands.slice(0, HISTORY_ROWS);
-  return (
-    <>
-      <header>
-        <h2 id="history-title">Commands</h2>
-        <span className="meta">{commands.length} since start</span>
-      </header>
-      {rows.length === 0 ? (
-        <p className="muted">No commands proposed yet.</p>
-      ) : (
-        <ul className="history">
-          {rows.map((c) => (
-            <li key={c.id}>
-              <span className="what">
-                {c.actionLabel} · {c.line}
-              </span>
-              <span className={`pill ${c.status === "executed" ? "pos" : c.status === "pending" ? "warn" : ""}`}>
-                {c.status === "executed" ? "Ran" : c.status === "pending" ? `${c.approvals.length} of ${c.requiredApprovals}` : c.status === "cancelled" ? "Cancelled" : "Rejected"}
-              </span>
-              <span className="sub num">
-                {clock(c.createdAt)} by {c.proposedBy}
-                {c.approvals.length > 0 && ` · ${c.approvals.map((a) => a.username).join(", ")}`}
-              </span>
-            </li>
-          ))}
-        </ul>
       )}
     </>
   );

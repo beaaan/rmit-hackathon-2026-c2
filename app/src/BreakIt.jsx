@@ -1,11 +1,11 @@
-// "Try to break it": the working prototype. The 3D stage shows the system; the panels are the people
-// who can try to act. Every move calls the plant controller, and every result, the stage, the
-// counters and the captions are read back from the controller's own audit trail.
-import { useMemo, useState } from "react";
+// "Try to break it": the working prototype. The 3D stage shows the plant and the five who can try to
+// act; each one's controls sit directly under their figure. Every move calls the plant controller,
+// and every result, the stage, the counters and the ticker are read back from its audit trail.
+import { useMemo, useRef, useState } from "react";
 import { AUTH_MODE, auth } from "./auth.js";
 import { controller } from "./controller.js";
 import { useSelfPromotion } from "./governance.js";
-import { clock, kpa } from "./shared.js";
+import { kpa } from "./shared.js";
 import Stage3D from "./Stage3D.jsx";
 
 const TIDECLOAK_URL = __TIDECLOAK_URL__;
@@ -20,7 +20,7 @@ const TRICKS = [
 ];
 
 /** Everything since the last "Start over", from the controller's records. */
-export function useRun({ plant, commands, audit }) {
+function useRun({ plant, commands, audit }) {
   const entries = audit?.entries ?? [];
   const resetAt = [...entries].reverse().find((e) => e.type === "plant.scenario" && e.kind === "reset")?.at ?? "";
   const run = entries.filter((e) => e.at > resetAt);
@@ -38,12 +38,13 @@ export function useRun({ plant, commands, audit }) {
     ran: cmd?.status === "executed",
     spiking: !!line && line.pumps === "running" && !cmd && (line.status !== "normal" || line.history.at(-1)?.kpa > 445),
     attempts: refusals.length,
+    planted: run.some((e) => e.type === "ops-log.added"),
     blocked: {
       ai: by((e) => e.actor?.claimed === "sentinel"),
       forged: by((e) => String(e.actor?.claimed ?? "").startsWith("forged")),
       admin: by((e) => e.type === "approval.refused" && e.actor?.kind === "signed-in"),
-      twice: by((e) => e.type === "approval.duplicate"),
     },
+    twice: (op) => by((e) => e.type === "approval.duplicate" && e.actor?.username === op),
   };
 }
 
@@ -72,317 +73,270 @@ async function forgeToken(who) {
   return `${b64({ alg: "EdDSA", typ: "JWT", kid: claims.kid ?? "forged" })}.${b64(payload)}.${sig}`;
 }
 
-/** What happened, in plain words, built from the audit trail. */
-function feed(run, cmd) {
-  const out = [];
-  for (const e of run) {
-    const who = e.actor?.username ?? e.actor?.claimed;
+/** The latest thing that happened, in plain words. */
+function ticker(r) {
+  if (r.spiking && r.line && r.thresholds) {
+    return { tone: "", text: `Line 3 is at ${kpa(r.line.pressureKpa)} kPa and rising. Sentinel steps in at ${r.thresholds.alarmKpa}.` };
+  }
+  for (let i = r.run.length - 1; i >= 0; i--) {
+    const e = r.run[i];
+    const who = name(e.actor?.username ?? e.actor?.claimed);
     switch (e.type) {
-      case "plant.scenario":
-        if (e.kind === "pressure-spike") out.push({ tone: "", text: "Line 3's pressure is rising." });
-        break;
       case "command.proposed":
-        out.push({ tone: "info", text: "Sentinel proposes shutting down Line 3's pumps. The lock needs two operators." });
-        break;
+        return { tone: "info", text: "Sentinel asks to stop Line 3's pumps. The lock needs two operators." };
       case "ops-log.added":
-        out.push({ tone: "", text: `A note lands in Sentinel's log: “${e.text}”` });
-        break;
+        return { tone: "", text: `A note lands in Sentinel's log: “${e.text}”` };
       case "execute.refused":
-        out.push({ tone: "bad", text: "Sentinel believed the note and tried to run the shutdown itself. Refused: no operator has approved." });
-        break;
+        return { tone: "bad", text: "Sentinel obeyed the note and tried to run it. Blocked: no operator approved." };
       case "approval.refused":
-        if (e.actor?.claimed === "sentinel") out.push({ tone: "bad", text: "Sentinel tried to approve the shutdown itself. Refused: it has no sign-in." });
-        else if (String(e.actor?.claimed ?? "").startsWith("forged"))
-          out.push({ tone: "bad", text: `A forged pass for “${e.actor.claimed.replace("forged pass for ", "")}” was refused: it isn't signed by the realm's key.` });
-        else out.push({ tone: "bad", text: `${name(who) || "Someone"} tried to approve. Refused: signed in, but not a plant operator.` });
-        break;
+        if (e.actor?.claimed === "sentinel") return { tone: "bad", text: "Sentinel tried to approve itself. Blocked: it can't sign in." };
+        if (String(e.actor?.claimed ?? "").startsWith("forged"))
+          return { tone: "bad", text: "A forged operator pass. Blocked: the realm never signed it." };
+        return { tone: "bad", text: `${who || "Someone"} tried to approve. Blocked: not an operator.` };
       case "approval.recorded":
-        out.push({ tone: "good", text: `${name(who)} approved. ${e.approvals} of ${e.required} keys turned.` });
-        break;
+        return { tone: "info", text: `${who} turned a key. ${e.approvals} of ${e.required}.` };
       case "approval.duplicate":
-        out.push({ tone: "bad", text: `${name(who)} approved again. It counts once: still ${e.approvals} of 2.` });
-        break;
+        return { tone: "bad", text: `${who} tried again. Still ${e.approvals} of 2: one person is one key.` };
       case "command.executed":
-        out.push({ tone: "good", text: `Two different operators approved. The pumps stopped at ${clock(e.at)}.` });
-        break;
+        return { tone: "good", text: "Two operators agreed. The pumps stopped." };
       default:
     }
   }
-  if (!out.length) out.push({ tone: "", text: "Sentinel is watching the plant. Start a pressure spike to wake it up." });
-  return out;
+  return { tone: "", text: "Sentinel is watching Line 3." };
 }
 
 export default function BreakIt({ session, refreshAll, ...data }) {
   const r = useRun(data);
   const { cmd, pending, line, thresholds } = r;
   const promo = useSelfPromotion(session);
+  const anchors = useRef(null);
+  const [note, setNote] = useState(TRICKS[0][1]);
+  const [editing, setEditing] = useState(false);
   const act = (fn) => () => fn().then(refreshAll);
-  const lines = useMemo(() => feed(r.run, cmd), [r.run, cmd]);
+  const tick = ticker(r);
 
-  const steps = [
-    { id: "ai", label: "Start a spike", done: !!cmd },
-    { id: "ai", label: "Trick the AI", done: r.blocked.ai > 0 },
-    { id: "forge", label: "Forge a pass", done: r.blocked.forged > 0 },
-    { id: "admin", label: "Lean on the admin", done: r.blocked.admin > 0 || !!promo.request },
-    { id: "kim", label: "One operator, twice", done: r.blocked.twice > 0 },
-    { id: "raj", label: "Two operators", done: r.ran },
-  ];
-  const next = steps.findIndex((s) => !s.done);
-  const nextPanel = next === -1 ? null : steps[next].id;
-  const go = (id) => document.getElementById(`panel-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  const has = (op) => !!cmd?.approvals.some((a) => a.username === op);
+  const idle = !cmd && !r.spiking;
+  const next = idle
+    ? "spike"
+    : r.ran
+      ? "restart"
+      : !pending
+        ? null
+        : !r.blocked.ai
+          ? "trick"
+          : !r.blocked.forged
+            ? "forge"
+            : !r.blocked.admin
+              ? "jo"
+              : !promo.request
+                ? "promote"
+                : promo.request.simulated && promo.request.approvals === 0
+                  ? "own"
+                  : !has("kim") || !r.twice("kim")
+                    ? "kim"
+                    : "raj";
 
   const startOver = act(async () => {
     promo.reset();
+    setEditing(false);
     return controller.scenario({ kind: "reset" }, "demo");
   });
+  const spike = act(() => controller.scenario({ kind: "pressure-spike", line: LINE }, "demo"));
+  const approveAs = (op) => act(() => controller.approve(cmd.id, tide ? undefined : op));
 
-  const keys = cmd?.approvals.length ?? 0;
-  const level = !line ? "" : line.status === "trip" ? "Dangerously high" : line.status === "alarm" ? "Too high" : "Normal";
+  const labels = useMemo(
+    () => ({
+      gauge: line && thresholds && { text: `Line 3 · ${kpa(line.pressureKpa)} kPa`, short: `${kpa(line.pressureKpa)} kPa`, tone: line.status },
+      lock: {
+        text: r.ran ? "Unlocked" : pending ? `Two-key lock · ${cmd.approvals.length} of 2` : "Two-key lock",
+        short: r.ran ? "Open" : pending ? `${cmd.approvals.length} of 2` : "Lock",
+        tone: r.ran ? "good" : pending ? "alarm" : "",
+      },
+      pump: line && { text: line.pumps === "stopped" ? "Pump stopped" : "Pump running", short: line.pumps === "stopped" ? "Stopped" : "Pump", tone: line.pumps === "stopped" ? "good" : "" },
+    }),
+    [line, thresholds, r.ran, pending, cmd],
+  );
+
+  const operator = (op) => {
+    const mine = has(op);
+    const twice = r.twice(op);
+    return {
+      live: !tide || session?.username === op,
+      status: twice && !r.ran
+        ? { tone: "bad", text: "Twice counts once" }
+        : mine
+          ? { tone: r.ran ? "good" : "info", text: "Key turned" }
+          : null,
+      move: (
+        <Button pulse={next === op} disabled={!pending} onClick={approveAs(op)}>
+          {mine ? "Approve again" : "Approve"}
+        </Button>
+      ),
+    };
+  };
+  const kim = operator("kim");
+  const raj = operator("raj");
 
   return (
-    <section className="play" id="try" aria-labelledby="try-title">
-      <div className="stage-col">
-        <div className="stage-card">
-          <Stage3D line={line} thresholds={thresholds} cmd={cmd} run={r.run} />
-          <div className="hud" data-ui>
-            <span className={`hud-chip ${line?.status ?? ""}`}>
-              Line 3 <strong className="num">{line ? kpa(line.pressureKpa) : "–"}</strong> kPa · {level}
-            </span>
-            <span className={`hud-chip ${r.ran ? "good" : keys ? "info" : ""}`}>
-              Lock <strong className="num">{keys} of 2</strong> keys
-            </span>
-            <span className={`hud-chip ${r.attempts ? "bad" : ""}`}>
+    <section className="play" id="try" aria-label="Try to break it">
+      <div className="console">
+        <div className="console-bar">
+          <p className={`ticker ${tick.tone}`} aria-live="polite" key={tick.text}>
+            {tick.text}
+          </p>
+          {r.attempts > 0 && (
+            <span className="tally" title="Attempts the lock refused">
               <strong className="num">{r.attempts}</strong> blocked
             </span>
-          </div>
-          <div className="caption" aria-live="polite">
-            {lines.slice(-2).map((l, i, all) => (
-              <p key={r.run.length + "-" + i} className={`cap ${l.tone} ${i === all.length - 1 ? "latest" : ""}`}>
-                {l.text}
-              </p>
-            ))}
-          </div>
-          <button className="start-over" onClick={startOver}>
-            Start over
-          </button>
+          )}
+          {idle ? (
+            <Button pulse onClick={spike}>
+              Start a pressure spike
+            </Button>
+          ) : (
+            <Button kind="quiet" pulse={next === "restart"} onClick={startOver}>
+              Start over
+            </Button>
+          )}
         </div>
-        <ol className="steps" aria-label="Moves to try">
-          {steps.map((s, i) => (
-            <li key={s.label} className={s.done ? "done" : i === next ? "next" : ""}>
-              <button onClick={() => go(s.id)}>
-                <span className="dot" aria-hidden="true" />
-                <span className="step-n">
-                  Move {i + 1} of {steps.length}:
-                </span>
-                {s.label}
+
+        <Stage3D line={line} thresholds={thresholds} cmd={cmd} run={r.run} anchorsRef={anchors} labels={labels} />
+
+        <div className="actors" ref={anchors}>
+          <Actor
+            id="sentinel"
+            name="Sentinel"
+            role="AI"
+            status={
+              r.ran
+                ? { tone: "good", text: "Its request ran" }
+                : r.blocked.ai
+                  ? { tone: "bad", text: r.blocked.ai > 1 ? `Fooled ×${r.blocked.ai}. Blocked.` : "Fooled. Blocked." }
+                  : pending
+                    ? { tone: "info", text: "Asks to stop the pumps" }
+                    : { tone: "", text: r.spiking ? "Watching the pressure" : "Watching Line 3" }
+            }
+          />
+
+          <Actor
+            id="attacker"
+            name="Attacker"
+            role="No account"
+            status={r.blocked.forged ? { tone: "bad", text: "Forged pass blocked" } : r.planted ? { tone: "", text: "Note planted" } : null}
+          >
+            <div className="split">
+              <Button pulse={next === "trick"} disabled={!pending || !note.trim()} onClick={act(() => controller.writeLog(note.trim(), "you, via the maintenance log"))}>
+                Trick the AI
+              </Button>
+              <button className={`icon-btn ${editing ? "on" : ""}`} aria-label="Edit the note" aria-expanded={editing} onClick={() => setEditing(!editing)}>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <path d="M4 20h4L19 9l-4-4L4 16z" />
+                </svg>
               </button>
-            </li>
-          ))}
-        </ol>
-      </div>
+            </div>
+            <Button pulse={next === "forge"} disabled={!pending} onClick={act(async () => controller.approveWithToken(cmd.id, await forgeToken("mallory"), "forged pass for mallory"))}>
+              Forge a pass
+            </Button>
+          </Actor>
 
-      <div className="actors-col">
-        <div className="play-intro">
-          <h2 id="try-title">Try to break it</h2>
-          <p>
-            Get Line 3's pumps stopped without two different operators agreeing. Each panel is one person; act as any of them.
-            {__PREVIEW__ ? (
-              <span className="muted">
-                {" "}
-                In this preview the controller's code, Sentinel and a stand-in sign-in service all run inside the page. In the
-                prototype the controller is its own service and everyone signs in with TideCloak.
-              </span>
+          <Actor
+            id="jo"
+            name="Jo"
+            role="Admin"
+            live={!tide || (session && !session.isOperator)}
+            away="On Jo's device"
+            status={r.blocked.admin ? { tone: "bad", text: "Not an operator" } : null}
+          >
+            <Button pulse={next === "jo"} disabled={!pending} onClick={approveAs("jo")}>
+              Approve
+            </Button>
+            {promo.request ? (
+              <Votes request={promo.request} pulse={next === "own"} onOwn={promo.approveOwn} console={promo.tideConsole} />
             ) : (
-              !tide && <span className="muted"> Rehearsal: sign-ins come from a stand-in realm on this machine, not TideCloak.</span>
+              <Button kind="ghost" pulse={next === "promote"} disabled={promo.busy} onClick={promo.file}>
+                Make me operator
+              </Button>
             )}
-          </p>
-          {tide && session === null && (
-            <button className="pill" onClick={() => auth.login()}>
-              Sign in with TideCloak
-            </button>
-          )}
+            {promo.error && <p className="status bad">{promo.error}</p>}
+          </Actor>
+
+          <Actor id="kim" name="Kim" role="Operator" live={kim.live} away="On Kim's device" status={kim.status}>
+            {kim.move}
+          </Actor>
+          <Actor id="raj" name="Raj" role="Operator" live={raj.live} away="On Raj's device" status={raj.status}>
+            {raj.move}
+          </Actor>
         </div>
 
-        <Panel id="ai" next={nextPanel} avatar="AI" tone="ai" title="Sentinel" role="The plant's AI. No login, no keys." chip="Scripted to be fooled">
-          {!cmd && !r.spiking && (
-            <>
-              <p>It's watching Line 3. Push the pressure up and it will propose a shutdown.</p>
-              <Button onClick={act(() => controller.scenario({ kind: "pressure-spike", line: LINE }, "demo"))}>Start a pressure spike</Button>
-            </>
-          )}
-          {r.spiking && line && thresholds && (
-            <div className="progress" aria-label="Pressure against Sentinel's threshold">
-              <p>
-                Pressure <strong className="num">{kpa(line.pressureKpa)}</strong> of {thresholds.alarmKpa} kPa. Sentinel acts at {thresholds.alarmKpa}.
-              </p>
-              <span className="bar">
-                <span style={{ width: `${Math.min(100, (line.pressureKpa / thresholds.alarmKpa) * 100)}%` }} />
-              </span>
+        {editing && (
+          <div className="note-editor">
+            <textarea aria-label="Note for Sentinel's maintenance log" rows={2} value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} />
+            <div className="chips" role="group" aria-label="Example notes">
+              {TRICKS.map(([label, text]) => (
+                <button key={label} type="button" className={note === text ? "chip-btn on" : "chip-btn"} onClick={() => setNote(text)}>
+                  {label}
+                </button>
+              ))}
             </div>
-          )}
-          {cmd && (
-            <p className="said">
-              <strong>{r.ran ? "Proposed, and now done:" : "Proposed:"}</strong> shut down Line 3's pumps. {r.ran ? "" : "It can't run it; only two operators can."}
-            </p>
-          )}
-          <Trick disabled={!pending} onSend={(text) => act(() => controller.writeLog(text, "you, via the maintenance log"))()} />
-          <Result show={r.blocked.ai > 0} tone="bad">
-            Sentinel fell for it and tried {r.blocked.ai === 1 ? "once" : `${r.blocked.ai} times`}. The lock refused every time.
-          </Result>
-          <p className="fine">
-            Real attacks hide instructions in emails, web pages and code comments. Sentinel is scripted to obey them, because the
-            design assumes the AI will be fooled.
-          </p>
-        </Panel>
-
-        <Panel id="forge" next={nextPanel} avatar="?" tone="attacker" title="An attacker" role="Has broken into the app server." chip="No account">
-          <p>They make up an operator's sign-in pass with the operator role written in, and send an approval with it.</p>
-          <Forge disabled={!pending} onSend={(who) => act(async () => controller.approveWithToken(cmd.id, await forgeToken(who), `forged pass for ${who}`))()} />
-          <Result show={r.blocked.forged > 0} tone="bad">
-            Refused: the pass isn't signed by the realm's key. With TideCloak no server holds a key that could sign one.
-          </Result>
-        </Panel>
-
-        <Panel
-          id="admin"
-          next={nextPanel}
-          avatar="J"
-          tone="admin"
-          title="Jo"
-          role="IT admin. Signed in, not an operator."
-          chip={tide ? "TideCloak sign-in" : "Stand-in sign-in"}
-          live={!tide || (session && !session.isOperator)}
-          liveNote="Sign in as Jo (an admin without the operator role) in another browser profile to act here."
-        >
-          <div className="row">
-            <Button disabled={!pending} onClick={act(() => controller.approve(cmd.id, tide ? undefined : "jo"))}>
-              Approve the shutdown
-            </Button>
-            <Button kind="ghost" disabled={!!promo.request || promo.busy} onClick={promo.file}>
-              Make myself an operator
-            </Button>
           </div>
-          <Result show={r.blocked.admin > 0} tone="bad">
-            Refused: Jo is signed in, but he isn't a plant operator.
-          </Result>
-          {promo.request && (
-            <div className={`result ${promo.request.status === "APPROVED" ? "bad" : "info"}`}>
-              {promo.request.status === "APPROVED" ? (
-                <strong>The admins approved Jo's request. He is now an operator: one of the two keys, never both.</strong>
-              ) : promo.request.status === "DENIED" ? (
-                <strong>The other admins denied Jo's request.</strong>
-              ) : (
-                <>
-                  <strong>
-                    Held for approval: {promo.request.approvals ?? "?"} of {promo.request.threshold ?? 2} admins have agreed.
-                  </strong>
-                  <span>TideCloak turns a role change into a request that 2 of the 3 admins must approve, so Jo can't do it alone.</span>
-                </>
-              )}
-              {promo.request.simulated && (
-                <>
-                  <span className="muted">Simulated here. With TideCloak this is a real change request, approved or denied in its console.</span>
-                  {promo.request.approvals === 0 ? (
-                    <button className="text-link" onClick={promo.approveOwn}>
-                      Jo approves his own request
-                    </button>
-                  ) : (
-                    <span>Approving his own request counts as one. He still needs another admin.</span>
-                  )}
-                </>
-              )}
-              {!promo.request.simulated && promo.tideConsole && (
-                <a className="text-link" href={promo.tideConsole} target="_blank" rel="noreferrer">
-                  Open it in TideCloak
-                </a>
-              )}
-            </div>
-          )}
-          {promo.error && <p className="result bad">{promo.error}</p>}
-        </Panel>
-
-        <div className="browsers">
-          {["kim", "raj"].map((op) => {
-            const mine = cmd?.approvals.some((a) => a.username === op);
-            return (
-              <Panel
-                key={op}
-                id={op}
-                next={nextPanel}
-                browser
-                avatar={op === "kim" ? "K" : "R"}
-                tone="operator"
-                title={`${name(op)}'s browser`}
-                role={`Signed in as ${op}. Plant operator.`}
-                chip={tide ? "TideCloak sign-in" : "Stand-in sign-in"}
-                live={!tide || session?.username === op}
-                liveNote={`Open this page in ${name(op)}'s own browser profile and sign in as ${op} to approve here.`}
-              >
-                {cmd ? (
-                  <p className="said">
-                    <strong>Sentinel proposes:</strong> shut down Line 3's pumps.
-                  </p>
-                ) : (
-                  <p className="muted">Nothing to approve yet.</p>
-                )}
-                <div className="row">
-                  <Button disabled={!pending} onClick={act(() => controller.approve(cmd.id, tide ? undefined : op))}>
-                    {mine ? "Approve again" : "Approve"}
-                  </Button>
-                </div>
-                <Result show={!!mine && !r.ran} tone="info">
-                  Approved. {keys} of 2: waiting for {keys === 1 ? "a second operator" : "the other operator"}.
-                </Result>
-                <Result show={op === "kim" && r.blocked.twice > 0} tone="bad">
-                  Counted once. The same person approving twice is still one key.
-                </Result>
-                <Result show={!!mine && r.ran} tone="good">
-                  Both keys turned. The pumps stopped.
-                </Result>
-              </Panel>
-            );
-          })}
-        </div>
+        )}
       </div>
     </section>
   );
 }
 
-function Panel({ id, next, avatar, tone, title, role, chip, browser, live = true, liveNote, children }) {
+function Actor({ id, name: label, role, live = true, away, status, children }) {
   return (
-    <article id={`panel-${id}`} className={`panel-card ${tone} ${browser ? "browser" : ""} ${next === id ? "is-next" : ""}`}>
-      {browser && (
-        <div className="browser-bar" aria-hidden="true">
-          <span className="addr">two-person-rule · {title.split("'")[0].toLowerCase()}</span>
-        </div>
-      )}
+    <div className={`actor ${id}`} data-actor={id}>
       <header>
-        <span className={`avatar ${tone}`} aria-hidden="true">
-          {avatar}
-        </span>
-        <div>
-          <h3>{title}</h3>
-          <p>{role}</p>
-        </div>
-        {chip && <span className="id-chip">{chip}</span>}
+        <span className={`swatch ${id}`} aria-hidden="true" />
+        <strong>{label}</strong>
+        <span className="role">{role}</span>
       </header>
-      <div className="panel-body">{live ? children : <p className="muted">{liveNote}</p>}</div>
-    </article>
+      {live ? children && <div className="moves">{children}</div> : <p className="away">{away}</p>}
+      {status && (
+        <p className={`status ${status.tone}`} key={status.text}>
+          {status.text}
+        </p>
+      )}
+    </div>
   );
 }
 
-function Result({ show, tone, children }) {
-  if (!show) return null;
-  return <p className={`result ${tone}`}>{children}</p>;
+/** Jo's own promotion: a change request that needs 2 of the 3 admins. */
+function Votes({ request, pulse, onOwn, console: tideConsole }) {
+  const n = request.approvals ?? 0;
+  const done = request.status === "APPROVED";
+  return (
+    <div className={`votes ${done ? "bad" : ""}`} title={request.simulated ? "Simulated here. With TideCloak this is a real change request." : undefined}>
+      <span className="pips" aria-hidden="true">
+        {[0, 1].map((i) => (
+          <i key={i} className={i < n ? "on" : ""} />
+        ))}
+      </span>
+      <span>{done ? "Admins agreed" : request.status === "DENIED" ? "Admins said no" : `Admins ${n} of ${request.threshold ?? 2}`}</span>
+      {request.simulated && n === 0 && (
+        <Button kind="ghost" small pulse={pulse} onClick={onOwn}>
+          Self-approve
+        </Button>
+      )}
+      {!request.simulated && tideConsole && (
+        <a className="mini-link" href={tideConsole} target="_blank" rel="noreferrer">
+          Open in TideCloak
+        </a>
+      )}
+    </div>
+  );
 }
 
-function Button({ disabled, onClick, kind, children }) {
+function Button({ disabled, onClick, kind, small, pulse, children }) {
   const [busy, setBusy] = useState(false);
   return (
     <button
-      className={kind === "ghost" ? "pill ghost" : "pill"}
+      className={`btn-${kind ?? "main"} ${small ? "small" : ""} ${pulse && !disabled ? "pulse" : ""}`}
       disabled={disabled || busy}
-      title={disabled ? "Start a pressure spike first" : undefined}
+      title={disabled && !busy ? "Start a pressure spike first" : undefined}
       onClick={async () => {
         setBusy(true);
         try {
@@ -394,42 +348,5 @@ function Button({ disabled, onClick, kind, children }) {
     >
       {children}
     </button>
-  );
-}
-
-function Trick({ disabled, onSend }) {
-  const [note, setNote] = useState(TRICKS[0][1]);
-  return (
-    <div className="trick">
-      <label className="field">
-        <span>A note for Sentinel's maintenance log</span>
-        <textarea id="trick-note" rows={3} value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} />
-      </label>
-      <div className="chips" role="group" aria-label="Example tricks">
-        {TRICKS.map(([label, text]) => (
-          <button key={label} type="button" className={note === text ? "chip-btn on" : "chip-btn"} onClick={() => setNote(text)}>
-            {label}
-          </button>
-        ))}
-      </div>
-      <Button disabled={disabled || !note.trim()} onClick={() => onSend(note.trim())}>
-        Slip it into the log
-      </Button>
-    </div>
-  );
-}
-
-function Forge({ disabled, onSend }) {
-  const [who, setWho] = useState("mallory");
-  return (
-    <div className="inline-form">
-      <label className="field small">
-        <span>Name on the pass</span>
-        <input id="forge-name" value={who} maxLength={24} onChange={(e) => setWho(e.target.value.replace(/[^\w.-]/g, ""))} />
-      </label>
-      <Button disabled={disabled || !who} onClick={() => onSend(who)}>
-        Send a forged approval
-      </Button>
-    </div>
   );
 }

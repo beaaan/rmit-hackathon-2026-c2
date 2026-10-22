@@ -47,11 +47,14 @@ npm run setup     # installs controller/ and app/
 npm run demo      # controller :4000, Sentinel, web app :3000
 ```
 
-Open http://localhost:3000. The page makes the case (an AI can ask, two people decide), shows who
-can and can't stop the pumps, and ends in **Try it yourself**: the working prototype in five steps.
-The pressure climbs and Sentinel proposes a shutdown; a fake note tricks Sentinel into running it
-alone (blocked); the IT admin tries (blocked); one operator approves twice (still 1 of 2); a second
-operator approves and the pumps stop. The operators' dashboard is at `#/control-room`.
+Open http://localhost:3000. The page makes the case (an AI can ask, two people decide), shows real
+incidents of AI deceiving, escaping and being prompt-injected ([`docs/RESEARCH.md`](docs/RESEARCH.md)),
+and ends in **Try to break it**: the working prototype as six moves in any order. Start a pressure
+spike so Sentinel proposes a shutdown, then try to get it run without two operators: write your own
+trick into the log Sentinel reads, forge an operator's pass, have the IT admin approve, approve
+twice as one operator. A live panel shows the plant, the two keys, a count of bypass attempts and a
+running conversation of what Sentinel and the controller did. The operators' dashboard is at
+`#/control-room`.
 
 Photographs and the clip on the page are from Wikimedia Commons, credited in the page footer and in
 `app/public/photos/credits.json`.
@@ -72,6 +75,7 @@ The control-room screen follows [taste-skill](https://github.com/leonxlnx/taste-
 
 | Document | What's in it |
 |---|---|
+| [`docs/RESEARCH.md`](docs/RESEARCH.md) | Real incidents: AI that deceives, escapes and gets prompt-injected, with sources |
 | [`docs/PLAN.md`](docs/PLAN.md) | Work plan: architecture, demo storyline, phased timeline, video script, risks |
 | [`docs/TIDECLOAK-NOTES.md`](docs/TIDECLOAK-NOTES.md) | What the Tide docs say about quorum, tokens, Forseti and AI agents, with sources |
 | [`docs/IDEAS.md`](docs/IDEAS.md) | The 20 ideas we considered, the ranking, and why we chose this one |

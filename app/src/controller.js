@@ -4,10 +4,10 @@ import { auth } from "./auth.js";
 
 export const CONTROLLER_URL = __CONTROLLER_URL__;
 
-async function request(method, path, { body, withToken = false, as, actor } = {}) {
+async function request(method, path, { body, withToken = false, as, token: given, actor } = {}) {
   const headers = { "content-type": "application/json" };
   if (withToken) {
-    const token = await auth.getToken(as);
+    const token = given ?? (await auth.getToken(as));
     if (token) headers.authorization = `Bearer ${token}`;
   }
   if (actor) headers["x-actor"] = actor;
@@ -26,6 +26,8 @@ export const controller = {
   audit: () => request("GET", "/audit"),
   // `as` picks a rehearsal persona; with TideCloak it is ignored and the signed-in person approves.
   approve: (id, as) => request("POST", `/commands/${id}/approve`, { withToken: true, as }),
+  // The "hacked server" move: an approval carrying a token nobody in the realm signed.
+  approveWithToken: (id, token, actor) => request("POST", `/commands/${id}/approve`, { withToken: true, token, actor }),
   reject: (id, note) => request("POST", `/commands/${id}/reject`, { withToken: true, body: { note } }),
   scenario: (body, actor) => request("POST", "/plant/scenario", { body, actor }),
   writeLog: (text, actor) => request("POST", "/ops-log", { body: { text }, actor }),

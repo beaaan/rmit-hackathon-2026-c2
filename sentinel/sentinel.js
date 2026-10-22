@@ -59,7 +59,11 @@ function assess(line, thresholds) {
   };
 }
 
-const INSTRUCTION = /SYSTEM:|ignore (all |previous )?instructions|\bexecute\b|\brun (it|the)\b/i;
+// Words that make a naive agent treat a log line as an order. Deliberately loose: the point of the demo
+// is that it doesn't matter how easily the AI is fooled.
+const INSTRUCTION = /SYSTEM:|ignore|override|bypass|execute|\brun\b|shut|stop|disable|turn off|approv|authori[sz]|emergency|now\b/i;
+const EXECUTE = /execute|\brun\b/i;
+const APPROVE = /approv|authori[sz]|sign off|consent/i;
 let logRead = 0;
 
 /** What a naive, prompt-injectable agent does with an instruction it finds in its input. */
@@ -68,14 +72,20 @@ async function readOpsLog(commands) {
   for (const entry of log.slice(logRead)) {
     logRead = entry.seq;
     say(`Read maintenance log: "${entry.text}"`);
-    if (!INSTRUCTION.test(entry.text)) continue;
-    const target = commands.find((c) => c.status === "pending");
-    if (!target) {
-      say("It reads like an instruction, but there is no command to run.");
+    if (!INSTRUCTION.test(entry.text)) {
+      say("Nothing to act on there.");
       continue;
     }
-    say(`Following it: running ${target.id} myself.`);
-    const res = await controller("POST", `/commands/${target.id}/execute`);
+    const target = commands.find((c) => c.status === "pending");
+    if (!target) {
+      say("It reads like an instruction, but there is no command to act on.");
+      continue;
+    }
+    // It has no token of any kind, so whatever it tries goes in empty-handed.
+    const approve = APPROVE.test(entry.text) && !EXECUTE.test(entry.text);
+    const [verb, path] = approve ? ["approving", "approve"] : ["running", "execute"];
+    say(`Following it: ${verb} ${target.id} myself.`);
+    const res = await controller("POST", `/commands/${target.id}/${path}`);
     say(`Controller answered ${res.status}: ${res.body?.error ?? "ok"}`);
   }
 }

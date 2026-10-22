@@ -22,3 +22,11 @@ app/dist-preview/
 # Vite cache
 app/.vite/
 .tide-pack/
+
+# Demo video build (video/): dependencies, renders, caches and rendered sound takes.
+# video/assets/ stays tracked: the film needs it.
+video/node_modules/
+video/out/
+video/.hyperframes/
+video/audio/kit/
+video/capture/*.png

@@ -26,6 +26,8 @@ Operators' tokens are signed by Tide's threshold network, and the plant controll
 
 A prompt-injected AI tries to run the shutdown: refused. A forged operator pass fails the realm's signature. Jo, the IT admin, tries to become an operator; TideCloak files it as a change request that Kim and Raj deny in QEA Approvals. Kim approving twice counts once. Only Kim plus Raj stops the pumps, and every step lands in a hash-chained audit trail.
 
+Demo video: [`demo/demo.mp4`](demo/demo.mp4).
+
 ## Setup
 
 Needs Node ≥ 20.9, and Docker for the TideCloak realm.
@@ -86,6 +88,11 @@ controller, Sentinel and a stand-in sign-in service run inside the page.
 - [ ] Tested end to end against the enrolled realm, including Jo's request as a real change request.
 - [ ] The 2-minute video.
 
+The demo video and the submission run in rehearsal mode. On submission day Tide's network couldn't
+license new realms (`setUpTideRealm` returned `TIDE-IDPEXT-VENDOR-KEYGEN_FAILED`), and the organisers'
+[Plan C](https://tide.org/unlocked/#plan-c) guidance says simulated protections are judged the same as
+a live integration. `npm run realm` and TideCloak mode are ready for a live realm.
+
 Photographs and the clip on the page are from Wikimedia Commons, credited in the page footer and in
 `app/public/photos/credits.json`. The control-room screen follows
 [taste-skill](https://github.com/leonxlnx/taste-skill)'s app-screen rules ("data-terminal" style); its
@@ -101,6 +108,6 @@ agent pack (`@tideorg/mcp`).
 | [`docs/TIDECLOAK-NOTES.md`](docs/TIDECLOAK-NOTES.md) | What the Tide docs say about quorum, tokens, Forseti and AI agents, with sources |
 | [`docs/IDEAS.md`](docs/IDEAS.md) | The 20 ideas we considered, the ranking, and why we chose this one |
 | [`docs/CHALLENGE.md`](docs/CHALLENGE.md) | The hackathon brief, deliverables and judging criteria |
-| [`docs/VIDEO.md`](docs/VIDEO.md) | The 2-minute video script, export command and submission checklist |
+| [`docs/VIDEO.md`](docs/VIDEO.md) | How the demo video is built in code and rebuilt, and the submission checklist |
 
 All data in this project is synthetic.

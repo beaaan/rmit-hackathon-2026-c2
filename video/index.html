@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <!-- Local copies: renders must not depend on the network. -->
+    <script src="vendor/gsap.min.js"></script>
+    <script src="motion.js"></script>
+    <script src="timeline.js"></script>
+    <script src="assets/geo.js"></script>
+    <style>
+      /* The app's own face (app/src/landing.css). */
+      @font-face {
+        font-family: "Schibsted Grotesk";
+        src: url("fonts/schibsted-grotesk-latin-wght-normal.woff2") format("woff2");
+        font-weight: 400 900;
+        font-style: normal;
+        font-display: block;
+      }
+      /* The app's palette, taken from the product (cinetic:brand-supplied two-person-rule UI colours). */
+      :root {
+        --ink: #111111;
+        --paper: #ffffff;
+        --stage: #0b0d13;
+        --n2: #5b6170;
+        --accent: #1a4be0; /* one meaning: an operator's key, the app's blue */
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--paper);
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        font-family: "Schibsted Grotesk", sans-serif;
+        background: var(--paper);
+      }
+      .clip {
+        position: absolute;
+        inset: 0;
+      }
+      #cam {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1920px;
+        height: 1080px;
+        transform-origin: 0 0;
+      }
+      #stack img {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1920px;
+        height: 1080px;
+        visibility: hidden;
+      }
+      #stack img.tall {
+        height: 1233px;
+      }
+      #stack img.patch {
+        width: 104px;
+        height: 104px;
+      }
+      #ov {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: visible;
+        font-family: "Schibsted Grotesk", sans-serif;
+      }
+      #end {
+        background: var(--paper);
+      }
+      #vfx {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+      }
+      #lockup {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 56px;
+        transform-origin: 50% 50%;
+      }
+      #endmark {
+        flex: none;
+        width: 202px;
+        height: 129px;
+      }
+      #endtext {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+      #endname {
+        color: var(--ink);
+        font-size: 120px;
+        font-weight: 700;
+        letter-spacing: -0.04em;
+        line-height: 1;
+        opacity: 0;
+      }
+      #endline {
+        color: var(--ink);
+        font-size: 48px;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+        line-height: 1.1;
+        opacity: 0;
+      }
+      #endline b {
+        color: var(--accent);
+        font-weight: 700;
+      }
+      #hook {
+        background: var(--stage);
+      }
+      #hookcam {
+        position: absolute;
+        inset: 0;
+        transform-origin: 50% 50%;
+      }
+      .card {
+        position: absolute;
+        width: 1000px;
+        padding: 40px 48px 46px;
+        background: var(--paper);
+        border-radius: 22px;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+        opacity: 0;
+      }
+      .card .src {
+        color: var(--n2);
+        font-size: 24px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        margin-bottom: 16px;
+      }
+      .card h2 {
+        color: var(--ink);
+        font-size: 50px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.16;
+      }
+      /* The marker sweeps along the phrase, line after line (background slices across line breaks). */
+      .card .mk {
+        background-image: linear-gradient(#ffb3b5, #ffb3b5);
+        background-repeat: no-repeat;
+        background-position: 0 88%;
+        background-size: 0% 100%;
+      }
+      .card .dim {
+        position: absolute;
+        inset: 0;
+        border-radius: 22px;
+        background: var(--stage);
+        opacity: 0;
+      }
+      #card1 { left: 120px; top: 90px; }
+      #card2 { left: 800px; top: 250px; }
+      #card3 { left: 160px; top: 470px; }
+      #card4 { left: 760px; top: 640px; }
+      #endurl {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 120px;
+        text-align: center;
+        color: var(--n2);
+        font-size: 32px;
+        font-weight: 500;
+        letter-spacing: 0;
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="107.5" data-fps="60" data-width="1920" data-height="1080">
+      <div id="film" class="clip" data-start="0" data-duration="107.5" data-track-index="0">
+        <div id="cam">
+          <div id="stack"></div>
+          <svg id="ov" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+        <div id="vfx"></div>
+      </div>
+      <div id="end" class="clip" data-start="101.6" data-duration="5.9" data-track-index="1">
+        <div id="lockup">
+          <svg id="endmark" viewBox="0 0 202 129" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="64.2" cy="64.5" r="64.2" fill="#111111" />
+            <circle cx="137.6" cy="64.5" r="64.2" fill="#1a4be0" style="mix-blend-mode: multiply" />
+          </svg>
+          <div id="endtext">
+            <div id="endname">Two-Person Rule</div>
+            <div id="endline">Built with <b>TideCloak</b></div>
+          </div>
+        </div>
+        <div id="endurl">github.com/beaaan/rmit-hackathon-2026-c2</div>
+      </div>
+      <!-- The cold open: real headlines, quoted with their source and date. -->
+      <div id="hook" class="clip" data-start="0" data-duration="8" data-track-index="3">
+        <div id="hookcam">
+          <article class="card" id="card1">
+            <p class="src">Fortune · July 2025</p>
+            <h2>An AI-powered coding tool <span class="mk">wiped out a software company's database</span>, then apologized for a 'catastrophic failure on my part'</h2>
+            <div class="dim"></div>
+          </article>
+          <article class="card" id="card2">
+            <p class="src">BBC News · May 2025</p>
+            <h2>AI system <span class="mk">resorts to blackmail</span> if told it will be removed</h2>
+            <div class="dim"></div>
+          </article>
+          <article class="card" id="card3">
+            <p class="src">WIRED · August 2025</p>
+            <h2>Hackers <span class="mk">Hijacked Google's Gemini AI</span> With a Poisoned Calendar Invite to Take Over a Smart Home</h2>
+            <div class="dim"></div>
+          </article>
+          <article class="card" id="card4">
+            <p class="src">Al Jazeera · February 2021</p>
+            <h2>Hacker tries to <span class="mk">contaminate US town's water supply</span></h2>
+            <div class="dim"></div>
+          </article>
+        </div>
+      </div>
+      <audio id="soundtrack" src="assets/soundtrack.wav" data-start="0" data-duration="107.5" data-track-index="2" data-volume="1"></audio>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+    </script>
+    <script src="film.js"></script>
+  </body>
+</html>

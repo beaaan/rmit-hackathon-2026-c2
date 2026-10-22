@@ -1,19 +1,38 @@
 # Handoff: finishing on the laptop
 
-Written Thu 22 Oct 2026 by the cloud session. Deadline: **Fri 23 Oct, 10:00 AEDT** (Thu 22 Oct,
-23:00 UTC). Everything below needs your browser, your Docker, or both, which the cloud session can't
-reach.
+Written Thu 22 Oct 2026 by the cloud session. Deadline for our team: **Thu 22 Oct, 6:00 pm Vietnam
+time** (11:00 UTC; see `docs/CHALLENGE.md`). Everything below needs your browser, your Docker, or
+both, which the cloud session can't reach.
+
+## Update, Thu 22 Oct afternoon
+
+- Licensing failed: `npm run realm` stopped at `setUpTideRealm` with 500
+  `TIDE-IDPEXT-VENDOR-KEYGEN_FAILED` (Midgard FinalizeWallet), repeatedly, on a clean container. The
+  organisers then told every team to simulate TideCloak's protections, judged the same as a live
+  integration ([Plan C](https://tide.org/unlocked/#plan-c)). The submission runs in **rehearsal
+  mode**, and steps 2 to 5 below are skipped for it. They still apply to a live realm.
+- Done: the demo video is built in code under `video/` from screens captured in rehearsal mode
+  (replaces step 6). How to rebuild and export it: `docs/VIDEO.md`.
+- Done: the README's `## Status` says why the submission runs in rehearsal mode.
+
+What's left, for a person:
+
+- [ ] If `demo/demo.mp4` isn't there yet, render and export it (`docs/VIDEO.md`, "Rebuild the video").
+      Commit `video/` and `demo/demo.mp4` to `master` and push.
+- [ ] Make the repo public: Settings → General → Danger Zone → Change repository visibility.
+- [ ] In a private window, check that the README renders and `demo/demo.mp4` plays.
+- [ ] Submit https://forms.gle/HRHYjnqB86j1LFS97 before **Thu 22 Oct, 6:00 pm Vietnam time**.
 
 ## Where things stand
 
-All work is on branch **`claude/nice-turing-lmo2gp`**, 6 commits ahead of `master`, not merged yet.
+This work was on branch **`claude/nice-turing-lmo2gp`**; it is merged into `master` (PR #3).
 
 | Done | Where |
 |---|---|
 | One-command realm setup: `npm run realm` | `scripts/tide-realm.js`, `scripts/tide-realm.json`, `.env.example` |
 | Landing stage redrawn as a control-room diagram (three.js removed) | `app/src/PlantStage.jsx`, `app/src/landing.css` |
 | Sign-in returns to the screen you started on; Jo's change request survives a reload | `app/src/auth.js`, `app/src/governance.js` |
-| README overview 288 words, realm setup under `## Setup` | `README.md` |
+| README overview 291 words, realm setup under `## Setup` | `README.md` |
 | Video script, ffmpeg command, submission checklist | `docs/VIDEO.md` |
 
 **Verified in the cloud:** rehearsal mode end to end (only Kim plus Raj stops the pumps), 15/15
@@ -136,15 +155,14 @@ Tide's own check: with the pack fetched (step 1 of `tide_doctor`'s output), run
 On this layout it always reports "no adapter JSON" (ours is `controller/tidecloak.json`) and "useDPoP
 is not set" (deliberate). Both are expected.
 
-### 6. Record the video (1–2 h)
+### 6. The video (done in code)
 
-Follow `docs/VIDEO.md`: the script with timings, then
-`ffmpeg -i in.mov -vcodec libx264 -crf 28 demo/demo.mp4`. Check it's 2:00 or less and under 100 MB, then
-commit `demo/demo.mp4`.
+Built under `video/` instead of screen-recorded. `docs/VIDEO.md` has how to rebuild it and export
+`demo/demo.mp4`. Check it's 2:00 or less and under 100 MB, then commit `demo/demo.mp4`.
 
-### 7. Ship (15 min, before 10:00 AEDT)
+### 7. Ship (15 min, before 6:00 pm Vietnam time)
 
-- [ ] Open a PR from `claude/nice-turing-lmo2gp` to `master` and merge it.
+- [x] Open a PR from `claude/nice-turing-lmo2gp` to `master` and merge it.
 - [ ] Run the secret check in `docs/VIDEO.md`.
 - [ ] Make the repo public (Settings → General → Danger Zone).
 - [ ] In a private window, check that the README renders and the video plays.

@@ -1,0 +1,187 @@
+[
+  {
+    "name": "s00-idle",
+    "note": "idle, water flowing",
+    "at": 1792657459760
+  },
+  {
+    "name": "s01-rise-00",
+    "note": "421",
+    "at": 1792657461058
+  },
+  {
+    "name": "s01-rise-01",
+    "note": "439",
+    "at": 1792657461872
+  },
+  {
+    "name": "s01-rise-02",
+    "note": "461",
+    "at": 1792657462687
+  },
+  {
+    "name": "s01-rise-03",
+    "note": "479",
+    "at": 1792657463475
+  },
+  {
+    "name": "s01-rise-04",
+    "note": "498",
+    "at": 1792657464284
+  },
+  {
+    "name": "s01-rise-05",
+    "note": "520",
+    "at": 1792657465073
+  },
+  {
+    "name": "s01-rise-06",
+    "note": "520",
+    "at": 1792657465870
+  },
+  {
+    "name": "s01-rise-07",
+    "note": "544",
+    "at": 1792657466671
+  },
+  {
+    "name": "s01-rise-08",
+    "note": "560",
+    "at": 1792657467489
+  },
+  {
+    "name": "s01-rise-09",
+    "note": "579",
+    "at": 1792657468288
+  },
+  {
+    "name": "s02-pending",
+    "note": "Sentinel asks; 0 of 2",
+    "at": 1792657469116
+  },
+  {
+    "name": "s03-trick",
+    "note": "prompt-injected Sentinel refused",
+    "at": 1792657471074
+  },
+  {
+    "name": "s04-forged",
+    "note": "forged pass refused",
+    "at": 1792657471852
+  },
+  {
+    "name": "s05-jo",
+    "note": "Jo refused: not an operator",
+    "at": 1792657472617
+  },
+  {
+    "name": "s06-promote",
+    "note": "Jo's request: Admins 0 of 2",
+    "at": 1792657473295
+  },
+  {
+    "name": "s06b-self",
+    "note": "Jo's own approval: 1 of 2",
+    "at": 1792657473943
+  },
+  {
+    "name": "s07-kim",
+    "note": "Kim: 1 of 2",
+    "at": 1792657474712
+  },
+  {
+    "name": "s08-kim-again",
+    "note": "Kim twice: still 1 of 2",
+    "at": 1792657475510
+  },
+  {
+    "name": "s09-raj",
+    "note": "two keys, pumps stop",
+    "at": 1792657476282
+  },
+  {
+    "name": "s09-fall-00",
+    "note": "651",
+    "at": 1792657477233
+  },
+  {
+    "name": "s09-fall-01",
+    "note": "573",
+    "at": 1792657478194
+  },
+  {
+    "name": "s09-fall-02",
+    "note": "509",
+    "at": 1792657479300
+  },
+  {
+    "name": "s09-fall-03",
+    "note": "458",
+    "at": 1792657480471
+  },
+  {
+    "name": "s09-fall-04",
+    "note": "410",
+    "at": 1792657481632
+  },
+  {
+    "name": "s09-fall-05",
+    "note": "374",
+    "at": 1792657482799
+  },
+  {
+    "name": "s09-fall-06",
+    "note": "344",
+    "at": 1792657483814
+  },
+  {
+    "name": "s09-fall-07",
+    "note": "318",
+    "at": 1792657484767
+  },
+  {
+    "name": "s09-fall-08",
+    "note": "289",
+    "at": 1792657485762
+  },
+  {
+    "name": "s09-fall-09",
+    "note": "269",
+    "at": 1792657486738
+  },
+  {
+    "name": "s09-fall-10",
+    "note": "249",
+    "at": 1792657487721
+  },
+  {
+    "name": "s09-fall-11",
+    "note": "230",
+    "at": 1792657488790
+  },
+  {
+    "name": "s09-fall-12",
+    "note": "219",
+    "at": 1792657489878
+  },
+  {
+    "name": "s09-fall-13",
+    "note": "212",
+    "at": 1792657490980
+  },
+  {
+    "name": "s09-fall-14",
+    "note": "199",
+    "at": 1792657492230
+  },
+  {
+    "name": "s09-fall-15",
+    "note": "187",
+    "at": 1792657493356
+  },
+  {
+    "name": "s10-control",
+    "note": "control room",
+    "at": 1792657496916
+  }
+]

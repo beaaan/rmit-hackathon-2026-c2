@@ -144,7 +144,8 @@ async function setup() {
   await status();
   console.log(`
 Done. Next, in tide-console as Jo (${TC}/realms/${REALM}/tide-console/):
-  1. People → kim → assign role tide-realm-admin → QEA Approvals → review and approve (Jo's enclave).
+  1. People → kim → assign role tide-realm-admin → QEA Approvals → review and approve (Jo's enclave),
+     plus the admin-policy update it brings along, if listed.
   2. The same for raj. Then there are 3 admins and every change needs 2 of them.
 Then: npm run demo   (now in TideCloak mode; open http://localhost:3000 in each person's Chrome profile)
 `);

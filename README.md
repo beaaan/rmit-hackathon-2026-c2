@@ -50,8 +50,8 @@ Jo / Kim / Raj switch. With `controller/tidecloak.json` present it runs in **Tid
 3. Open each link in that person's own Chrome profile and create their Tide account. The script waits,
    makes Jo the first admin, and writes `controller/tidecloak.json` (gitignored, never commit it).
 4. As Jo, in tide-console (`http://localhost:8080/realms/riverbend/tide-console/`): People → kim →
-   assign `tide-realm-admin`, then approve it in QEA Approvals. Repeat for raj. With three admins,
-   every governed change needs two approvals.
+   assign `tide-realm-admin`, then approve it in QEA Approvals (plus the admin-policy update it brings
+   along, if listed). Repeat for raj. With three admins, every governed change needs two approvals.
 5. `npm run demo`, and sign in as Jo, Kim and Raj, each in their own profile.
 
 `npm run realm -- status` shows who is linked, who holds which role and what's pending. The script is
@@ -101,5 +101,6 @@ agent pack (`@tideorg/mcp`).
 | [`docs/TIDECLOAK-NOTES.md`](docs/TIDECLOAK-NOTES.md) | What the Tide docs say about quorum, tokens, Forseti and AI agents, with sources |
 | [`docs/IDEAS.md`](docs/IDEAS.md) | The 20 ideas we considered, the ranking, and why we chose this one |
 | [`docs/CHALLENGE.md`](docs/CHALLENGE.md) | The hackathon brief, deliverables and judging criteria |
+| [`docs/VIDEO.md`](docs/VIDEO.md) | The 2-minute video script, export command and submission checklist |
 
 All data in this project is synthetic.

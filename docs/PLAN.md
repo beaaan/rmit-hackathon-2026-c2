@@ -277,6 +277,9 @@ Sleep between Phase 5 and Phase 6. Buffer is built into the morning.
 
 ## 8. Video script (2:00)
 
+Superseded by [`VIDEO.md`](VIDEO.md), which follows the current screens click by click. The first
+draft is kept below.
+
 | Time | Section | On screen | Voice-over (draft) |
 |---|---|---|---|
 | 0:00–0:20 | The possibility | Plant dashboard, Sentinel live | "AI can watch a water plant around the clock and spot trouble in seconds. But nobody lets it near the controls." |

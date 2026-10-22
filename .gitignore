@@ -14,3 +14,6 @@ controller/tidecloak.json
 
 # App build output
 app/dist/
+
+# taste-skill working files
+.taste-skill/

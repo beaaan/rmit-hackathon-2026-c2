@@ -59,6 +59,9 @@ shutdown and then try to execute it directly (refused). Approve as two different
 
 `npm test` runs the controller tests. API and limits: [`controller/README.md`](controller/README.md).
 
+The control-room screen follows [taste-skill](https://github.com/leonxlnx/taste-skill)'s app-screen rules
+("data-terminal" style); its chart helper is vendored in `app/src/vendor/charts.js` (MIT).
+
 ## Project documents
 
 | Document | What's in it |

@@ -53,7 +53,7 @@ function assess(line, thresholds) {
       `(alarm ${thresholds.alarmKpa}, trip ${thresholds.tripKpa}). ` +
       (secondsToTrip > 0 ? `Projected to reach trip pressure in ~${secondsToTrip}s. ` : "Already above trip pressure. ") +
       "Recommend stopping the line's pumps to protect the distribution main; restart once the cause is found.",
-    evidence: line.history.slice(-10),
+    evidence: line.history.slice(-WINDOW),
   };
 }
 

@@ -33,15 +33,17 @@ export class Plant {
         { ...line, pumps: "running", inletValve: "open", pressureKpa: NORMAL_KPA, spiking: false, history: [] },
       ]),
     );
-    for (let i = 0; i < 30; i++) this.tick();
+    // Start with a minute of calm history, one reading a second, ending now.
+    const start = this.now().getTime() - 60_000;
+    for (let i = 0; i < 60; i++) this.tick(new Date(start + i * 1000));
   }
 
   hasLine(id) {
     return this.lines.has(id);
   }
 
-  tick() {
-    const at = this.now().toISOString();
+  tick(time = this.now()) {
+    const at = time.toISOString();
     for (const line of this.lines.values()) {
       const noise = (this.random() - 0.5) * 8;
       let target = NORMAL_KPA;

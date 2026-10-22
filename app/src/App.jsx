@@ -3,7 +3,8 @@ import { AUTH_MODE, auth } from "./auth.js";
 import ControlRoom from "./ControlRoom.jsx";
 import { controller } from "./controller.js";
 import { usePoll } from "./shared.js";
-import Story from "./Story.jsx";
+import Landing from "./Landing.jsx";
+import "./landing.css";
 
 const TIDECLOAK_URL = __TIDECLOAK_URL__;
 const VIEWS = { story: "#/", room: "#/control-room" };
@@ -12,10 +13,12 @@ function useView() {
   const read = () => (location.hash === VIEWS.room ? "room" : "story");
   const [view, setView] = useState(read);
   useEffect(() => {
-    const onHash = () => {
-      setView(read());
-      window.scrollTo(0, 0);
-    };
+    const onHash = () =>
+      setView((prev) => {
+        const next = read();
+        if (next !== prev) window.scrollTo(0, 0);
+        return next;
+      });
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
@@ -39,39 +42,14 @@ export default function App() {
 
   const data = { session, authError, plant, plantError, commands, audit, refreshAll: () => Promise.all([refreshCommands(), refreshAudit()]) };
 
+  if (view !== "room") return <Landing {...data} />;
   return (
     <div className="app">
       <Rail view={view} session={session} />
       <main className="canvas">
-        {view === "room" ? <ControlRoom {...data} /> : <StoryShell {...data} />}
+        <ControlRoom {...data} />
       </main>
     </div>
-  );
-}
-
-function StoryShell(props) {
-  const { session, authError, plantError } = props;
-  return (
-    <>
-      <div className="story-bar">
-        <span className="product">Two-Person Rule</span>
-        <span className="muted">
-          {AUTH_MODE === "rehearsal"
-            ? "Rehearsal: sign-ins come from a stand-in realm on this machine, not TideCloak."
-            : session
-              ? `Signed in with TideCloak as ${session.username}${session.isOperator ? ", plant operator" : ""}`
-              : "Built with TideCloak"}
-        </span>
-        {AUTH_MODE === "tide" && session === null && (
-          <button className="btn" onClick={() => auth.login()}>
-            Sign in with TideCloak
-          </button>
-        )}
-      </div>
-      {plantError && <p className="error-line">{plantError} Start it with `npm run demo`.</p>}
-      {authError && <p className="error-line">{authError}</p>}
-      <Story {...props} />
-    </>
   );
 }
 
@@ -90,7 +68,7 @@ function Rail({ view, session }) {
           <path d="M5 4h11l3 3v13H5z" />
           <path d="M8 10h8M8 14h8M8 18h5" />
         </svg>
-        <span className="tip">The story</span>
+        <span className="tip">Back to the page</span>
       </a>
       <a className="rail-item" href={VIEWS.room} aria-current={view === "room" ? "page" : undefined}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">

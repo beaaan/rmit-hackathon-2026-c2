@@ -47,11 +47,14 @@ npm run setup     # installs controller/ and app/
 npm run demo      # controller :4000, Sentinel, web app :3000
 ```
 
-Open http://localhost:3000. The page tells the story in five moments, each with one button: the
-pressure climbs and Sentinel proposes a shutdown; a fake note tricks Sentinel into running it alone
-(blocked); the IT admin tries to approve (blocked); one operator approves, twice (still 1 of 2); a
-second operator approves and the pumps stop. **Start over** resets it. The operators' dashboard is
-the second tab (`#/control-room`).
+Open http://localhost:3000. The page makes the case (an AI can ask, two people decide), shows who
+can and can't stop the pumps, and ends in **Try it yourself**: the working prototype in five steps.
+The pressure climbs and Sentinel proposes a shutdown; a fake note tricks Sentinel into running it
+alone (blocked); the IT admin tries (blocked); one operator approves twice (still 1 of 2); a second
+operator approves and the pumps stop. The operators' dashboard is at `#/control-room`.
+
+Photographs and the clip on the page are from Wikimedia Commons, credited in the page footer and in
+`app/public/photos/credits.json`.
 
 - **TideCloak mode (the real demo):** put your realm's `tidecloak.json` in `controller/`
   (tide-console → Apps → myclient → Credentials). Operators then sign in with TideCloak, each in their

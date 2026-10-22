@@ -8,7 +8,7 @@ export const ACTIONS = {
 
 const NORMAL_KPA = 420;
 const STOPPED_KPA = 150;
-const SPIKE_RATE_KPA = 14;
+const SPIKE_RATE_KPA = 20;
 const MAX_KPA = 760;
 const HISTORY = 120;
 

@@ -55,10 +55,25 @@ export function createApp({ verifyOperator, plant, audit, allowedOrigins = [], d
     app.post("/plant/scenario", (req, res) => {
       const { kind, line } = req.body ?? {};
       if (kind === "pressure-spike" && plant.hasLine(line)) plant.startSpike(line);
-      else if (kind === "reset") plant.reset();
-      else return res.status(400).json({ error: "Use {kind: 'pressure-spike', line} or {kind: 'reset'}" });
+      else if (kind === "reset") {
+        plant.reset();
+        book.cancelPending("Demo reset");
+      } else return res.status(400).json({ error: "Use {kind: 'pressure-spike', line} or {kind: 'reset'}" });
       audit.append("plant.scenario", { kind, line, actor: { kind: "unverified", claimed: claimedActor(req) } });
       res.json(plant.state());
+    });
+
+    // The maintenance log Sentinel reads. Anything written here is untrusted text, which is the point:
+    // the demo plants an instruction in it to show that a tricked AI still can't run a command.
+    const opsLog = [];
+    app.get("/ops-log", (req, res) => res.json(opsLog));
+    app.post("/ops-log", (req, res) => {
+      const text = String(req.body?.text ?? "").trim().slice(0, 500);
+      if (!text) return res.status(400).json({ error: "Text is required" });
+      const entry = { seq: opsLog.length + 1, at: new Date().toISOString(), source: claimedActor(req), text };
+      opsLog.push(entry);
+      audit.append("ops-log.added", { text, actor: { kind: "unverified", claimed: entry.source } });
+      res.status(201).json(entry);
     });
   }
 

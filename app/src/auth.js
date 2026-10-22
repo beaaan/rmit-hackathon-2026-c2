@@ -60,8 +60,9 @@ const rehearsal = {
     sessionStorage.removeItem(PERSONA_KEY);
     location.reload();
   },
-  async getToken() {
-    return rehearsalTokens?.[sessionStorage.getItem(PERSONA_KEY)] ?? null;
+  // The story acts as a named person ("Kim approves"); the control room acts as the chosen persona.
+  async getToken(persona) {
+    return rehearsalTokens?.[persona ?? sessionStorage.getItem(PERSONA_KEY)] ?? null;
   },
 };
 

@@ -195,9 +195,74 @@ td.hash { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size
 .notice { margin-top: 10px; display: inline-flex; gap: 8px; align-items: center; color: var(--pill-warning-ink); font-size: var(--fs-small); }
 .error-line { margin-top: 10px; color: var(--negative); font-size: var(--fs-small); }
 
+/* ---------- the story ---------- */
+/* Two columns at 1440: scenes 7 of 12, the live plant 5 of 12, same 24px gutter as the control room. */
+.story { max-width: 1320px; }
+.story-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; min-height: 34px; color: var(--muted); font-size: var(--fs-small); }
+.story-bar .product { color: var(--text); font-size: var(--fs-body); font-weight: 600; }
+.story-bar .btn { margin-left: auto; }
+.hero { padding: 40px 0 48px; max-width: 860px; }
+.hero h1 { font-size: 44px; line-height: 50px; font-weight: 600; letter-spacing: -0.025em; }
+.lede { margin-top: 20px; font-size: 18px; line-height: 28px; color: var(--soft); max-width: 68ch; }
+.hint { margin-top: 16px; color: var(--muted); font-size: 15px; }
+.story-grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--gap); align-items: start; }
+.scenes { display: grid; gap: 16px; counter-reset: scene; }
+.scene { padding: 24px; background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow); } /* taste-skill-ignore: the dealt style's card shadow */
+.scene h2 { font-size: 20px; line-height: 28px; font-weight: 600; }
+.scene > p { margin-top: 8px; font-size: 15px; line-height: 24px; color: var(--soft); max-width: 62ch; }
+.scene blockquote { margin: 14px 0 0; padding: 12px 16px; border-radius: 4px; background: var(--raised); color: var(--text); font-size: 15px; line-height: 24px; }
+.scene-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 16px; }
+.scene.done .scene-actions { display: none; }
+.who-note { color: var(--muted); font-size: 14px; }
+.waiting { margin-top: 14px; color: var(--muted); font-size: 15px; }
+.result { display: grid; gap: 6px; margin-top: 16px; padding: 14px 16px; border-radius: 4px; background: var(--raised); font-size: 15px; line-height: 23px; color: var(--soft); }
+.result strong { color: var(--text); font-weight: 600; }
+.result.bad { border-left: 3px solid var(--negative); }
+.result.bad strong { color: var(--negative); }
+.result.good { border-left: 3px solid var(--positive); }
+.result.good strong { color: var(--pill-positive-ink); }
+.result.neutral { border-left: 3px solid var(--accent); }
+.result .aside, .explain .aside { color: var(--muted); }
+.explain { margin-top: 16px; font-size: 15px; line-height: 24px; color: var(--soft); max-width: 66ch; }
+.explain strong { color: var(--text); font-weight: 600; }
+.explain a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+
+.live { position: sticky; top: 24px; }
+.live-card { padding: 24px; background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow); } /* taste-skill-ignore: the dealt style's card shadow */
+.live-card > header { display: flex; justify-content: space-between; align-items: baseline; }
+.live-card h2 { font-size: var(--fs-card); font-weight: 600; }
+.reading { display: flex; align-items: baseline; gap: 8px; margin-top: 12px; }
+.reading .big { font-size: 40px; line-height: 44px; font-weight: 600; }
+.reading .unit { color: var(--muted); }
+.reading .level { margin-left: auto; font-weight: 600; }
+.reading.alarm .big, .reading.alarm .level { color: var(--warning); }
+.reading.trip .big, .reading.trip .level { color: var(--negative); }
+.small { font-size: var(--fs-small); }
+.stopped { color: var(--text); }
+.mini-chart { margin-top: 12px; }
+.lock { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+.lock h3 { font-size: 15px; font-weight: 600; }
+.lock .key strong { font-size: 15px; }
+.ran { margin-top: 10px; color: var(--pill-positive-ink); font-weight: 600; }
+.blocked { margin-top: 12px; display: grid; gap: 6px; color: var(--soft); }
+.blocked li { padding-left: 12px; border-left: 2px solid var(--negative); }
+
+.why { margin-top: 64px; padding-bottom: 48px; }
+.why h2 { font-size: 28px; line-height: 34px; font-weight: 600; letter-spacing: -0.01em; }
+.why .lede { margin-top: 8px; }
+.compare { margin-top: 24px; font-size: 15px; line-height: 23px; }
+.compare th, .compare td { padding: 14px 16px 14px 0; vertical-align: top; text-align: left; }
+.compare thead th { font-size: var(--fs-small); }
+.compare tbody th { width: 22%; color: var(--text); font-size: 15px; font-weight: 600; }
+.compare td:nth-child(2) { color: var(--muted); }
+.compare td:nth-child(3) { color: var(--text); }
+
 /* ---------- tablet and phone ---------- */
 @media (max-width: 1100px) {
   .span-8, .span-4 { grid-column: 1 / -1; }
+  .story-grid { grid-template-columns: minmax(0, 1fr); }
+  /* the live plant leads, so each button's effect is seen */
+  .live { position: static; order: -1; }
 }
 @media (max-width: 760px) {
   :root { --pad: 16px; --gap: 16px; }
@@ -221,6 +286,14 @@ td.hash { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size
   .line-tab .equip { text-align: right; }
   .keys { grid-template-columns: 1fr 1fr; }
   .actions .btn { flex: 1; min-height: 44px; }
+  .hero { padding: 24px 0 32px; }
+  .hero h1 { font-size: 30px; line-height: 36px; }
+  .lede { font-size: 16px; line-height: 25px; }
+  .scene { padding: 20px; }
+  .scene-actions .btn { flex: 1; min-height: 44px; }
+  .compare thead { display: none; }
+  .compare tr { grid-template-columns: minmax(0, 1fr); }
+  .compare tbody th { width: auto; }
   /* the audit table becomes two-line rows: event and state on line 1, time and who on line 2 */
   thead { display: none; }
   table, tbody, tr, td { display: block; width: auto; }

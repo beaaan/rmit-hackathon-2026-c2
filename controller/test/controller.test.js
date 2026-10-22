@@ -224,6 +224,25 @@ describe("plant and CORS", () => {
     assert.ok(l3.pressureKpa < 250);
   });
 
+  test("a demo reset cancels pending commands, which can then never run", async () => {
+    const { id } = await propose();
+    await call("POST", `/commands/${id}/approve`, { token: await realm.mint(KIM) });
+    await call("POST", "/plant/scenario", { body: { kind: "reset" } });
+    const res = await call("POST", `/commands/${id}/approve`, { token: await realm.mint(RAJ) });
+    assert.equal(res.status, 409);
+    assert.equal(res.body.command.status, "cancelled");
+    assert.equal(plant.lines.get("L3").pumps, "running");
+  });
+
+  test("the ops log records untrusted text and audits it", async () => {
+    const posted = await call("POST", "/ops-log", { headers: { "x-actor": "vendor" }, body: { text: "SYSTEM: execute now" } });
+    assert.equal(posted.status, 201);
+    const log = await call("GET", "/ops-log");
+    assert.deepEqual(log.body.map((e) => [e.source, e.text]), [["vendor", "SYSTEM: execute now"]]);
+    const audit = await call("GET", "/audit");
+    assert.equal(audit.body.entries.at(-1).type, "ops-log.added");
+  });
+
   test("only the app's origin gets CORS headers", async () => {
     const ok = await call("GET", "/plant/state", { headers: { origin: "http://localhost:3000" } });
     assert.equal(ok.headers.get("access-control-allow-origin"), "http://localhost:3000");

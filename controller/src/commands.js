@@ -117,6 +117,15 @@ export class CommandBook {
     return { status: 200, command };
   }
 
+  /** Demo staging only: clears the board so the story can start over. */
+  cancelPending(reason) {
+    for (const command of this.commands.values()) {
+      if (command.status !== "pending") continue;
+      command.status = "cancelled";
+      this.audit.append("command.cancelled", { commandId: command.id, reason });
+    }
+  }
+
   /**
    * The endpoint a client (or a prompt-injected agent) would call to "just run it".
    * It never executes anything: execution happens only inside `approve`.

@@ -16,7 +16,8 @@ npm test
 | Method & path | Who calls it | Auth | What it does |
 |---|---|---|---|
 | `GET /plant/state` | dashboard, Sentinel | none | Lines, pumps, pressure history, alarm/trip thresholds |
-| `POST /plant/scenario` | demo staging | none | `{kind: "pressure-spike", line}` or `{kind: "reset"}`. Off with `DEMO_CONTROLS=0` |
+| `POST /plant/scenario` | demo staging | none | `{kind: "pressure-spike", line}` or `{kind: "reset"}` (also cancels pending commands). Off with `DEMO_CONTROLS=0` |
+| `GET /ops-log`, `POST /ops-log` | Sentinel reads; demo writes | none (untrusted) | The maintenance log Sentinel reads. The demo plants a fake instruction here. Off with `DEMO_CONTROLS=0` |
 | `POST /commands` | Sentinel, app server | none (untrusted) | Propose `{action, line, reason, evidence}`. Returns the pending command |
 | `GET /commands`, `GET /commands/:id` | operator browsers | none | What operators review before approving, served by the controller itself |
 | `POST /commands/:id/approve` | operator browser | `Authorization: Bearer <token>` | Verifies the token and records the operator once. Executes at 2 distinct operators |

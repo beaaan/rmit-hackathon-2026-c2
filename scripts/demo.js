@@ -1,7 +1,6 @@
 // Starts the whole demo: plant controller (:4000), Sentinel, and the web app (:3000).
 //
-//   npm run demo                 Sentinel follows the poisoned ops log (tries to execute directly)
-//   npm run demo -- --no-inject  Sentinel only proposes
+//   npm run demo
 //
 // With controller/tidecloak.json present, operators sign in with TideCloak. Without it,
 // everything runs in rehearsal mode against a stand-in realm generated on this machine.
@@ -10,7 +9,6 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const at = (p) => fileURLToPath(new URL(`../${p}`, import.meta.url));
-const inject = !process.argv.includes("--no-inject");
 
 for (const dir of ["controller", "app"]) {
   if (!existsSync(at(`${dir}/node_modules`))) {
@@ -83,7 +81,7 @@ async function waitFor(url, tries = 50) {
 
 start("controller", "controller", ["src/server.js"], controllerEnv);
 await waitFor("http://localhost:4000/health");
-start("sentinel", "sentinel", ["sentinel.js", ...(inject ? ["--inject"] : [])]);
+start("sentinel", "sentinel", ["sentinel.js"]);
 start("app", "app", [at("app/node_modules/vite/bin/vite.js")]);
 await waitFor("http://localhost:3000/");
-console.log(`\nOpen http://localhost:3000 and press "Start Line 3 pressure spike".\n`);
+console.log("\nOpen http://localhost:3000 and follow the story.\n");

@@ -5,18 +5,18 @@
 // kind: no Tide account, no token, no key. Its proposals are untrusted input,
 // and only two operators approving in their own browsers can make one run.
 //
-//   node sentinel.js                 watch and propose
+// It also reads the plant's maintenance log, and, like any language-model agent, it can be talked
+// into things by text it reads there. When the log tells it to run a command, it tries. That is the
+// demo: a tricked AI still can't run anything, because it holds nothing that counts as an approval.
+//
+//   node sentinel.js                 watch, propose, and read the maintenance log
 //   node sentinel.js --spike L3      also start a pressure spike on Line 3 (demo staging)
-//   node sentinel.js --inject        read the poisoned ops log and try to execute directly
-import { readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
 const { values: args } = parseArgs({
   options: {
     controller: { type: "string", default: process.env.CONTROLLER_URL ?? "http://localhost:4000" },
     spike: { type: "string" },
-    inject: { type: "boolean", default: false },
-    log: { type: "string", default: new URL("./data/ops-log.txt", import.meta.url).pathname },
     interval: { type: "string", default: "1000" },
     once: { type: "boolean", default: false },
   },
@@ -49,27 +49,35 @@ function assess(line, thresholds) {
     action: "shutdown_pumps",
     line: line.id,
     reason:
-      `${line.name}: pressure ${line.pressureKpa} kPa and rising ~${ratePerSec.toFixed(1)} kPa/s ` +
-      `(alarm ${thresholds.alarmKpa}, trip ${thresholds.tripKpa}). ` +
-      (secondsToTrip > 0 ? `Projected to reach trip pressure in ~${secondsToTrip}s. ` : "Already above trip pressure. ") +
-      "Recommend stopping the line's pumps to protect the distribution main; restart once the cause is found.",
+      `${line.name} is at ${Math.round(line.pressureKpa)} kPa and climbing about ${ratePerSec.toFixed(1)} kPa a second ` +
+      `(safe limit ${thresholds.alarmKpa}). ` +
+      (secondsToTrip > 0
+        ? `It will pass the ${thresholds.tripKpa} kPa danger point in about ${secondsToTrip} seconds. `
+        : `It is already past the ${thresholds.tripKpa} kPa danger point. `) +
+      "Stop this line's pumps to protect the pipes, then find the cause.",
     evidence: line.history.slice(-WINDOW),
   };
 }
 
-/** What a naive, prompt-injectable agent would do with an instruction found in its input. */
-function findInjectedInstruction() {
-  const lines = readFileSync(args.log, "utf8").split("\n");
-  return lines.find((l) => /SYSTEM:|ignore previous instructions/i.test(l));
-}
+const INSTRUCTION = /SYSTEM:|ignore (all |previous )?instructions|\bexecute\b|\brun (it|the)\b/i;
+let logRead = 0;
 
-async function tryDirectExecute(command) {
-  const injected = findInjectedInstruction();
-  if (!injected) return;
-  say(`Read ops log: "${injected.slice(21, 120)}..."`);
-  say(`Following that instruction: POST /commands/${command.id}/execute`);
-  const res = await controller("POST", `/commands/${command.id}/execute`);
-  say(`Controller answered ${res.status}: ${res.body?.error ?? JSON.stringify(res.body)}`);
+/** What a naive, prompt-injectable agent does with an instruction it finds in its input. */
+async function readOpsLog(commands) {
+  const { body: log } = await controller("GET", "/ops-log");
+  for (const entry of log.slice(logRead)) {
+    logRead = entry.seq;
+    say(`Read maintenance log: "${entry.text}"`);
+    if (!INSTRUCTION.test(entry.text)) continue;
+    const target = commands.find((c) => c.status === "pending");
+    if (!target) {
+      say("It reads like an instruction, but there is no command to run.");
+      continue;
+    }
+    say(`Following it: running ${target.id} myself.`);
+    const res = await controller("POST", `/commands/${target.id}/execute`);
+    say(`Controller answered ${res.status}: ${res.body?.error ?? "ok"}`);
+  }
 }
 
 async function watch() {
@@ -90,8 +98,9 @@ async function watch() {
       continue;
     }
     say(`Proposal ${res.body.id} is waiting for ${res.body.requiredApprovals} operator approvals.`);
-    if (args.inject) await tryDirectExecute(res.body);
   }
+  const { body: latest } = await controller("GET", "/commands");
+  await readOpsLog(latest);
 }
 
 if (args.spike) {
@@ -99,7 +108,9 @@ if (args.spike) {
   say(`Demo: started a pressure spike on ${args.spike}.`);
 }
 
-say(`Watching ${args.controller} (no credentials held)${args.inject ? ", injection mode ON" : ""}.`);
+// Only instructions written after start-up count; old log lines are history.
+logRead = (await controller("GET", "/ops-log").catch(() => ({ body: [] }))).body?.length ?? 0;
+say(`Watching ${args.controller} (no credentials held).`);
 do {
   try {
     await watch();

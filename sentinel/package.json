@@ -9,7 +9,6 @@
   },
   "scripts": {
     "start": "node sentinel.js",
-    "demo": "node sentinel.js --spike L3",
-    "demo:inject": "node sentinel.js --spike L3 --inject"
+    "demo": "node sentinel.js --spike L3"
   }
 }

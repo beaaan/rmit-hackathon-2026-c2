@@ -4,10 +4,10 @@ import { auth } from "./auth.js";
 
 export const CONTROLLER_URL = __CONTROLLER_URL__;
 
-async function request(method, path, { body, withToken = false, actor } = {}) {
+async function request(method, path, { body, withToken = false, as, actor } = {}) {
   const headers = { "content-type": "application/json" };
   if (withToken) {
-    const token = await auth.getToken();
+    const token = await auth.getToken(as);
     if (token) headers.authorization = `Bearer ${token}`;
   }
   if (actor) headers["x-actor"] = actor;
@@ -24,7 +24,9 @@ export const controller = {
   state: () => request("GET", "/plant/state"),
   commands: () => request("GET", "/commands"),
   audit: () => request("GET", "/audit"),
-  approve: (id) => request("POST", `/commands/${id}/approve`, { withToken: true }),
+  // `as` picks a rehearsal persona; with TideCloak it is ignored and the signed-in person approves.
+  approve: (id, as) => request("POST", `/commands/${id}/approve`, { withToken: true, as }),
   reject: (id, note) => request("POST", `/commands/${id}/reject`, { withToken: true, body: { note } }),
   scenario: (body, actor) => request("POST", "/plant/scenario", { body, actor }),
+  writeLog: (text, actor) => request("POST", "/ops-log", { body: { text }, actor }),
 };

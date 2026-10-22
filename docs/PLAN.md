@@ -7,6 +7,21 @@ submission. The research behind the technical decisions is in [`TIDECLOAK-NOTES.
 > Malaysia deadline (Thu 22 Oct, 6 pm local), skip Phase 4 and the stretch items and cut Phase 2
 > to the must-haves.
 
+## Status (Thu 22 Oct, evening)
+
+- [x] Plant controller, Sentinel and the web app run end to end on a stand-in realm (`rehearsal`
+      mode): `npm run setup && npm run demo`. Merged in PR #1.
+- [x] Every bypass in the storyline is refused on screen and in the audit trail: the prompt-injected
+      AI, a forged operator pass, the admin approving, one operator approving twice. Only two
+      different operators stop the pumps.
+- [x] Landing page with a live 3D console (the five actors over their own controls), sourced
+      incidents (`docs/RESEARCH.md`), and a projector-ready control room (`#/control-room`).
+- [x] Shareable static preview: `npm run build:preview --prefix app`.
+- [ ] **TideCloak realm** (Phase 1), then the app's `tide` mode tested against it, including Jo's
+      self-promotion as a real change request (Phase 3).
+- [ ] README overview (≤ 300 words) and the realm setup steps (Phase 5).
+- [ ] Video and submission (Phase 6).
+
 ---
 
 ## 1. The idea in one paragraph
@@ -71,32 +86,30 @@ All names, plants and readings are synthetic.
 ## 4. Architecture
 
 ```
-            ┌──────────────────────────┐
- Sentinel ─▶│  App server (Next.js)    │  proposals, sensor feed, audit view
- (no creds) │  holds NO signing keys   │
-            └────────────┬─────────────┘
-                         │ registers pending command
-                         ▼
-            ┌──────────────────────────┐        ┌────────────────────────────┐
- Kim's  ───▶│  Plant controller        │        │ TideCloak (Docker, local)  │
- browser    │  (separate Node service) │◀─JWK───│ + Tide network (ORKs)      │
- Raj's  ───▶│  verifies operator tokens│        │ QEA: 3 admins, quorum 2    │
- browser    │  executes at 2 distinct  │        └────────────────────────────┘
-            │  operators; append-only  │
-            │  audit log               │
-            └──────────────────────────┘
+ Sentinel ───▶┌──────────────────────────┐        ┌────────────────────────────┐
+ (no creds)   │  Plant controller        │◀─JWK───│ TideCloak (Docker, local)  │
+ Kim's    ───▶│  (separate Node service) │        │ + Tide network (ORKs)      │
+ browser      │  verifies operator tokens│        │ QEA: 3 admins, quorum 2    │
+ Raj's    ───▶│  executes at 2 distinct  │        └────────────────────────────┘
+ browser      │  operators; hash-chained │
+              │  audit log               │
+              └──────────────────────────┘
+ Web app (static, Vite): landing console and control room. Reads the controller; holds no keys.
 ```
 
-- **App (`app/`)**: Next.js from the TideCloak template (`npm init @tidecloak/nextjs@latest`).
-  Screens: plant dashboard, proposal queue, operator approval view, audit trail.
+- **App (`app/`)**: Vite + React + three.js, **not** the Next.js template. Signs in with
+  `@tidecloak/js` when `controller/tidecloak.json` exists (`tide` mode); otherwise uses a stand-in
+  realm generated on the machine (`rehearsal` mode). Screens: the landing console (3D stage with the
+  five actors, each over their own controls) and the control room (lines, decision, chart, audit trail).
+  There is no app server: Sentinel posts straight to the controller.
 - **Controller (`controller/`)**: small Express service standing in for the plant-side gateway (PLC).
   Its only TideCloak material is the public key from `tidecloak.json`. It verifies each approval
   token with `@tidecloak/verify` (EdDSA, issuer, `azp`, role `plant-operator`) and records approvals
   by token subject. Two **distinct** operators → execute. Operators' browsers call it **directly**,
   so the app server never handles their approval tokens.
-- **Sentinel (`sentinel/`)**: scripted agent. Reads a synthetic sensor feed, posts a proposal with its
-  reasoning. Has a "prompt injection" mode where a poisoned log line makes it call the controller's
-  execute endpoint itself, which fails.
+- **Sentinel (`sentinel/`)**: scripted agent. Watches the controller's simulated plant, posts a
+  proposal with its evidence. It also reads a maintenance log (`/ops-log`) and obeys instructions
+  planted there, so a poisoned note makes it call execute or approve itself, which fails.
 - **TideCloak**: `tideorg/tidecloak-dev` Docker image on a laptop (it talks to the live Tide network).
 
 ---
@@ -162,10 +175,14 @@ You do this on your laptop; I prepare the repo in parallel.
      -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=password \
      tideorg/tidecloak-dev:latest
    ```
-2. [ ] Run `npm init @tidecloak/nextjs@latest app` **inside this repo**. Accept defaults (realm
-   `nextjs-test`, client `myclient`). Open the enrolment link it prints and enrol as **Jo**.
-   Wait for it to finish on its own.
-3. [ ] `cd app && npm install && npm run dev` → log in at http://localhost:3000 as Jo.
+2. [ ] Create the realm **outside this repo**. Our `app/` is Vite, not the Next.js template, so
+   running `npm init @tidecloak/nextjs@latest app` here would overwrite it. Running the initializer
+   in a scratch folder is fine: keep its realm (`nextjs-test`) and client (`myclient`). Open the
+   enrolment link it prints and enrol as **Jo**. Wait for it to finish on its own.
+3. [ ] On `myclient`, allow redirect URI `http://localhost:3000/*` and web origin
+   `http://localhost:3000`. Copy `tidecloak.json` (Apps → myclient → Credentials) to
+   `controller/tidecloak.json` (gitignored), run `npm run demo` (now in `tide` mode) and log in at
+   http://localhost:3000 as Jo.
 4. [ ] **While Jo is the only admin (threshold 1, so each change applies on Jo's approval):**
    - [ ] Create realm roles `plant-operator` and `plant-viewer`. Authorize each change request in **QEA Approvals**.
    - [ ] Add users **kim** and **raj** (People → Add a user). Each enrols via their one-time link in their own browser profile.
@@ -174,8 +191,7 @@ You do this on your laptop; I prepare the repo in parallel.
 5. [ ] **Then add the other admins, in this order:**
    - [ ] Grant `tide-realm-admin` to kim → authorize (2 admins: threshold still 1).
    - [ ] Grant `tide-realm-admin` to raj → authorize (3 admins: threshold now **2**).
-6. [ ] Download `tidecloak.json` (Apps → myclient → Credentials) and copy it to `controller/`.
-7. [ ] Commit the generated `app/` (minus `node_modules`, and not your local DB volume).
+6. [ ] Download `tidecloak.json` again if any keys changed, and restart `npm run demo`. Never commit it.
 
 **Gate A (by 17:00):** Kim and Raj can each log in; as Jo, assigning any role creates a change request
 showing **0/2** that Jo alone cannot commit.
@@ -197,29 +213,35 @@ I write this; you pull and run it.
   - [x] CORS for `http://localhost:3000` only.
   - [x] Unit tests with a locally generated Ed25519 key and hand-made tokens: wrong signature, wrong role,
         expired, same operator twice, two distinct operators.
-- [ ] **App** (`app/`)
-  - [ ] Plant dashboard: 3 lines, pressure sparkline, pump status, polled from the controller's `/plant/state`.
-  - [ ] Proposal queue with Sentinel's reasoning and the controller's approval count.
-  - [ ] Operator view (`plant-operator` only, via TideCloak middleware): "Approve shutdown" calls the controller directly with the user's token.
-  - [ ] Audit trail page, merged from controller log.
-  - [ ] Role-gated UI: Jo sees the dashboard but no Approve button.
+- [x] **App** (`app/`, Vite + React + three.js)
+  - [x] Plant dashboard: 3 lines, pressure chart, pump status, polled from the controller's `/plant/state` (control room).
+  - [x] Proposal with Sentinel's evidence and the controller's approval count, shown as the lock's two keyholes.
+  - [x] "Approve" calls the controller directly with the signed-in user's token; the app server never sees it.
+  - [x] Audit trail from the controller's log, with a short reason for every refusal.
+  - [x] ~~Role-gated UI~~ Changed: Jo *can* press Approve, so the demo shows the controller refusing him ("Not an operator").
+  - [x] Landing console: 3D stage where every attempt plays out (refusals bounce off the lock, approvals turn keys), the five actors' controls under their figures.
+  - [ ] Tested in `tide` mode against a real realm (needs Phase 1).
 - [x] **Sentinel** (`sentinel/`)
   - [x] Node script: watches the controller's simulated plant (the plant sim lives in the controller,
         not the app), detects the spike, posts a proposal.
-  - [x] `--inject` mode: poisoned log line → tries `POST /commands/:id/execute` directly → logs the `403`.
+  - [x] Prompt injection: reads `/ops-log`; a planted note makes it call execute (or approve) itself → `403`, logged.
 
 **Gate B (by 20:00):** the full happy path works: spike → proposal → Kim approves → Raj approves →
-pumps stop. **If it fails:** cut the dashboard to a table and keep the approvals working.
+pumps stop. ✅ Passed in rehearsal mode; repeat in `tide` mode after Phase 1. **If it fails:** cut the dashboard to a table and keep the approvals working.
 
 ### Phase 3: Attack scenarios and story polish (20:00–21:30)
 
-- [ ] Sentinel injection run shows a clear refusal in the UI and audit log.
-- [ ] Same-operator-twice is visibly rejected ("Kim already approved, 1 of 2").
+- [x] Sentinel injection run shows a clear refusal in the UI and audit log.
+- [x] Same-operator-twice is visibly rejected ("Kim tried again. Still 1 of 2").
+- [x] Forged operator pass refused (not signed by the realm's key).
 - [ ] Jo's self-promotion → pending in QEA Approvals → Kim and Raj deny → shows as denied. Screenshot it.
+      Built (`app/src/governance.js` files the grant and tracks the change request) and simulated in
+      rehearsal; untested against TideCloak.
 - [ ] Optional ⭐ DPoP: turn on `useDPoP: { mode: 'strict' }` and add the pack's `verifyDpop` to the
       controller, so a copied token replayed with plain Bearer is refused. Only if it takes under 45 minutes.
 
 **Gate C (by 21:30):** you can run steps 1–6 of the storyline back to back without touching code.
+✅ Passed in rehearsal mode (step 3 simulated); repeat in `tide` mode.
 
 ### Phase 4 ⭐: Network-signed commands (21:30–23:30, hard stop)
 
@@ -239,10 +261,11 @@ the next step in the README. Don't sacrifice the video for this.
 
 ### Phase 5: README and docs (23:30–00:30, or first thing tomorrow)
 
-- [ ] README starts with the official template: badge, `## Project overview`, one-sentence
+- [x] README starts with the official template: badge, `## Project overview`, one-sentence
       description, "Built with TideCloak" line, the five numbered judging sections, then `## Setup`.
 - [ ] Project overview **≤ 300 words** (check with `wc -w`). Draft answers in §9 below.
-- [ ] `## Setup`: Docker command, initializer, realm checklist from Phase 1, how to run controller + app + Sentinel.
+- [x] `## Setup`: how to run controller + app + Sentinel, and the preview build.
+- [ ] `## Setup`: Docker command and the realm checklist from Phase 1.
 - [ ] Honest limits section (short): controller enforces the count; session compromise = operator
       compromise; no workload attestation for the AI.
 
@@ -292,7 +315,7 @@ Sleep between Phase 5 and Phase 6. Buffer is built into the morning.
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
 | Tide enrolment / initializer stalls | Medium | High | Start Phase 1 immediately; Discord #support; continue Phase 2 in parallel. |
-| Next.js template version quirks (webpack flags, DPoP page) | Medium | Medium | Use the template as generated; don't upgrade packages. |
+| Tide-mode wiring untested (DPoP, admin API CORS, change-request endpoints) | Medium | High | Test right after Phase 1; the rehearsal mode keeps the demo working meanwhile. |
 | Judges see "just an approval workflow" | Medium | High | Lead with the QEA moment and "no keys on the server"; the honest-limits note shows we understand the boundary. |
 | Reads as a security tool (FAQ warning) | Medium | Medium | Keep the story about operators and the plant; say "what's now possible", not "attacks stopped". |
 | Phase 4 eats the night | High | High | Hard stop 23:30; only with a Tide confirmation. |
@@ -301,16 +324,18 @@ Sleep between Phase 5 and Phase 6. Buffer is built into the morning.
 
 ---
 
-## 11. Repo layout (target)
+## 11. Repo layout
 
 ```
 README.md              project overview (template) + setup
 docs/PLAN.md           this file
 docs/TIDECLOAK-NOTES.md research notes and sources
-app/                   Next.js app (from the TideCloak template)
+docs/RESEARCH.md       sourced incidents (AI acting on its own, prompt injection, water plants)
+app/                   Vite + React + three.js: landing console and control room
 controller/            plant controller service + tests
-sentinel/              scripted AI agent + synthetic sensor data
-demo/demo.mp4          the 2-minute video
+sentinel/              scripted AI agent
+scripts/demo.js        starts controller, Sentinel and app (`npm run demo`)
+demo/demo.mp4          the 2-minute video (to do)
 ```
 
 ## 12. Open questions

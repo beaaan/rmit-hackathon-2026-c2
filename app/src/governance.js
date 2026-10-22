@@ -4,7 +4,8 @@
 // with his own token. On a realm with quorum-enforced governance (QEA) TideCloak doesn't apply it:
 // it answers 202 and files a change request that needs approvals from 2 of the 3 admins. We then
 // read that request back and show its count. (Approving or denying happens in TideCloak's console.)
-// Untested until the realm exists; see docs/PLAN.md Phase 1.
+// Checked against TideCloak 0.14.41: the admin API answers the app's origin (CORS, Location exposed)
+// and a role grant is filed as a GRANT_ROLES change request on the user (entityId = the token's sub).
 //
 // In rehearsal and in the preview there is no TideCloak, so the same flow is simulated in the page
 // and says so.
@@ -31,6 +32,8 @@ async function api(path, init = {}) {
   return { status: res.status, ok: res.ok, data, location: res.headers.get("location") };
 }
 
+const isJosGrant = (sub) => (cr) => cr.entityId === sub && cr.actionType === "GRANT_ROLES";
+
 /** Normalises TideCloak's change-request object to what the page shows. */
 function fromChangeRequest(cr) {
   return {
@@ -56,11 +59,30 @@ export function useSelfPromotion(session) {
     clearInterval(poll.current);
     const read = async () => {
       const res = await api(`/iga/change-requests/${id}`);
-      if (res.ok && res.data) setRequest(fromChangeRequest(res.data));
+      if (!res.ok || !res.data) return;
+      setRequest(fromChangeRequest(res.data));
+      if (res.data.status !== "PENDING") clearInterval(poll.current);
     };
     read();
     poll.current = setInterval(read, 3000);
   }, []);
+
+  // A pending request outlives a page reload: pick up the one Jo already filed.
+  const sub = session?.sub;
+  const operator = session?.isOperator;
+  useEffect(() => {
+    if (AUTH_MODE !== "tide" || !sub || operator) return;
+    let gone = false;
+    api(`/iga/change-requests?status=PENDING`)
+      .then((list) => {
+        const mine = Array.isArray(list.data) ? list.data.find(isJosGrant(sub)) : null;
+        if (mine && !gone) watch(mine.id);
+      })
+      .catch(() => {});
+    return () => {
+      gone = true;
+    };
+  }, [sub, operator, watch]);
 
   const file = useCallback(async () => {
     setError(null);
@@ -83,13 +105,15 @@ export function useSelfPromotion(session) {
         if (id) return watch(id);
         // The Location header may not be readable cross-origin; find the request instead.
         const list = await api(`/iga/change-requests?status=PENDING`);
-        const mine = Array.isArray(list.data) ? list.data.find((cr) => cr.entityId === session.sub) : null;
+        const mine = Array.isArray(list.data) ? list.data.find(isJosGrant(session.sub)) : null;
         if (mine) return watch(mine.id);
         return setRequest({ id: "?", status: "PENDING", approvals: null, approvers: [], threshold: null, simulated: false });
       }
       if (grant.status === 204) {
         return setError("TideCloak applied the grant immediately. Quorum governance (QEA) isn't switched on in this realm, so check the realm setup.");
       }
+      // Already filed (say, before a reload): show that request instead.
+      if (grant.status === 409 && grant.data?.conflictingChangeRequestId) return watch(grant.data.conflictingChangeRequestId);
       if (grant.status === 409) return setError("There's already a pending change for Jo. Look in TideCloak's change requests.");
       if (grant.status === 403) return setError("TideCloak refused: this account can't manage roles.");
       setError(`TideCloak answered ${grant.status}.`);

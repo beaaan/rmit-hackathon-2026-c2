@@ -1,12 +1,13 @@
-// "Try to break it": the working prototype. The 3D stage shows the plant and the five who can try to
-// act; each one's controls sit directly under their figure. Every move calls the plant controller,
-// and every result, the stage, the counters and the ticker are read back from its audit trail.
-import { useMemo, useRef, useState } from "react";
+// "Try to break it": the working prototype. The plant diagram shows Line 3, the two-key lock and a signal
+// line from each of the five who can try to act, ending over their own controls. Every move calls the
+// plant controller, and every result, the diagram, the counters and the ticker are read back from its
+// audit trail.
+import { useRef, useState } from "react";
 import { AUTH_MODE, auth } from "./auth.js";
 import { controller } from "./controller.js";
 import { useSelfPromotion } from "./governance.js";
 import { kpa } from "./shared.js";
-import Stage3D from "./Stage3D.jsx";
+import PlantStage from "./PlantStage.jsx";
 
 const TIDECLOAK_URL = __TIDECLOAK_URL__;
 const LINE = "L3";
@@ -145,19 +146,6 @@ export default function BreakIt({ session, refreshAll, ...data }) {
   const spike = act(() => controller.scenario({ kind: "pressure-spike", line: LINE }, "demo"));
   const approveAs = (op) => act(() => controller.approve(cmd.id, tide ? undefined : op));
 
-  const labels = useMemo(
-    () => ({
-      gauge: line && thresholds && { text: `Line 3 · ${kpa(line.pressureKpa)} kPa`, short: `${kpa(line.pressureKpa)} kPa`, tone: line.status },
-      lock: {
-        text: r.ran ? "Unlocked" : pending ? `Two-key lock · ${cmd.approvals.length} of 2` : "Two-key lock",
-        short: r.ran ? "Open" : pending ? `${cmd.approvals.length} of 2` : "Lock",
-        tone: r.ran ? "good" : pending ? "alarm" : "",
-      },
-      pump: line && { text: line.pumps === "stopped" ? "Pump stopped" : "Pump running", short: line.pumps === "stopped" ? "Stopped" : "Pump", tone: line.pumps === "stopped" ? "good" : "" },
-    }),
-    [line, thresholds, r.ran, pending, cmd],
-  );
-
   const operator = (op) => {
     const mine = has(op);
     const twice = r.twice(op);
@@ -201,7 +189,7 @@ export default function BreakIt({ session, refreshAll, ...data }) {
           )}
         </div>
 
-        <Stage3D line={line} thresholds={thresholds} cmd={cmd} run={r.run} anchorsRef={anchors} labels={labels} />
+        <PlantStage line={line} thresholds={thresholds} cmd={cmd} run={r.run} anchorsRef={anchors} />
 
         <div className="actors" ref={anchors}>
           <Actor

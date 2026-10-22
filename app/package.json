@@ -12,8 +12,7 @@
   "dependencies": {
     "@tidecloak/js": "^0.14.41",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "three": "^0.169.0"
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.7.0",

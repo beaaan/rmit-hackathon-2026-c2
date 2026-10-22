@@ -30,7 +30,7 @@ for (let f = f0; f < f1; f++) {
     // Lazily attached frames must be decoded before the capture.
     await Promise.all([...document.images].filter((i) => i.getAttribute("src") && !(i.complete && i.naturalWidth)).map((i) => i.decode().catch(() => {})));
   }, f / FPS);
-  const buf = await page.screenshot({ type: "jpeg", quality: 92, optimizeForSpeed: true });
+  const buf = await page.screenshot({ type: "jpeg", quality: 100 });
   if (!ff.stdin.write(buf)) await new Promise((r) => ff.stdin.once("drain", r));
   if ((f - f0) % 120 === 0) log("frame", f, "of", f1);
 }

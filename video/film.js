@@ -28,58 +28,60 @@
   const btn = (actor, text) => G.buttons.find((b) => b.actor === actor && b.text === text);
 
   // ---- camera: [start, duration, cx, cy, zoom, ease], contiguous -----------------------------
-  const CAM0 = { x: 470, y: 372, z: 2.5 };
+  const CAM0 = { x: 540, y: 460, z: 1.75 };
   const CAM = [];
   // anchor: the target point travels to the centre of the frame in a straight line while the zoom runs
   // in log space, instead of the centre and zoom moving independently (a 10x zoom would swing it off-screen).
   const cam = (t0, dur, x, y, z, ease = E.cam, anchor = false) => CAM.push({ t0, dur, x, y, z, ease, anchor });
 
+  // Framing rule: zoom stays at or under ~1.85, so the 2x screenshots are never upscaled (no softness),
+  // and every shot frames a group of things (caption + line, lock + routes, cards), not empty stage.
   // Act 1, the problem: along Line 3 from the gauge to the pump and the city.
-  cam(0, 5.2, 560, 372, 2.5, E.linear);
-  cam(5.2, 2.3, 1490, 372, 2.5, E.cam);
-  cam(7.5, 4.9, 1520, 366, 2.62, E.dolly);
+  cam(0, 5.2, 600, 460, 1.75, E.linear);
+  cam(5.2, 2.3, 1360, 460, 1.75, E.cam);
+  cam(7.5, 4.9, 1370, 455, 1.82, E.dolly);
   // Act 2, the rule: pull out to the whole page, then the lock, then the two operators.
-  cam(12.4, 2.1, 960, 540, 1.0, E.cam);
-  cam(14.5, 2.5, 960, 545, 1.035, E.dolly);
-  cam(17.0, 1.6, lockC[0], lockC[1] - 10, 2.0, E.cam);
-  cam(18.6, 1.7, lockC[0], lockC[1] - 10, 2.08, E.dolly);
-  cam(20.3, 1.7, 1320, 742, 1.6, E.cam);
-  cam(22.0, 2.3, 1310, 740, 1.64, E.dolly);
+  cam(12.4, 2.1, 960, 556, 1.0, E.cam);
+  cam(14.5, 2.5, 960, 556, 1.03, E.dolly);
+  cam(17.0, 1.6, 960, 520, 1.8, E.cam);
+  cam(18.6, 1.7, 960, 520, 1.85, E.dolly);
+  cam(20.3, 1.7, 1320, 700, 1.6, E.cam);
+  cam(22.0, 2.3, 1320, 700, 1.64, E.dolly);
   // Act 3, the spike: the gauge, then Sentinel's request reaching the lock.
-  cam(24.3, 1.5, 420, 398, 2.3, E.cam);
-  cam(25.8, 1.7, 430, 400, 2.38, E.dolly);
-  cam(27.5, 1.4, 700, 545, 1.32, E.cam);
-  cam(28.9, 1.3, lockC[0], lockC[1] - 30, 2.2, E.cam);
-  cam(30.2, 3.6, lockC[0], lockC[1] - 30, 2.3, E.dolly);
+  cam(24.3, 1.5, 560, 440, 1.8, E.cam);
+  cam(25.8, 1.7, 565, 440, 1.85, E.dolly);
+  cam(27.5, 1.4, 760, 545, 1.3, E.cam);
+  cam(28.9, 1.3, 960, 540, 1.75, E.cam);
+  cam(30.2, 3.6, 960, 540, 1.82, E.dolly);
   // Act 4, the tricked AI.
-  cam(33.8, 1.4, 600, 742, 1.7, E.cam);
-  cam(35.2, 2.2, 600, 742, 1.74, E.dolly);
-  cam(37.4, 2.0, 620, 560, 1.36, E.cam);
-  cam(39.4, 1.9, 630, 560, 1.4, E.dolly);
-  cam(41.3, 1.3, 430, 830, 2.3, E.cam);
-  cam(42.6, 1.8, 430, 830, 2.36, E.dolly);
+  cam(33.8, 1.4, 640, 700, 1.6, E.cam);
+  cam(35.2, 2.2, 640, 700, 1.64, E.dolly);
+  cam(37.4, 2.0, 760, 560, 1.3, E.cam);
+  cam(39.4, 1.9, 770, 560, 1.34, E.dolly);
+  cam(41.3, 1.3, 620, 760, 1.8, E.cam);
+  cam(42.6, 1.8, 620, 760, 1.85, E.dolly);
   // Act 5, the forged pass.
-  cam(44.4, 1.3, 600, 852, 2.25, E.cam);
-  cam(45.7, 1.1, 600, 852, 2.3, E.dolly);
-  cam(46.8, 1.3, 760, 600, 1.45, E.cam);
-  cam(48.1, 2.2, 765, 600, 1.49, E.dolly);
+  cam(44.4, 1.3, 640, 770, 1.8, E.cam);
+  cam(45.7, 1.1, 640, 770, 1.85, E.dolly);
+  cam(46.8, 1.3, 800, 600, 1.4, E.cam);
+  cam(48.1, 2.2, 805, 600, 1.44, E.dolly);
   // Act 6, the admin approving.
-  cam(50.3, 1.3, 960, 740, 1.7, E.cam);
-  cam(51.6, 4.0, 960, 738, 1.76, E.dolly);
+  cam(50.3, 1.3, 960, 700, 1.6, E.cam);
+  cam(51.6, 4.0, 960, 700, 1.66, E.dolly);
   // Act 7, the admin promoting themselves.
-  cam(55.6, 1.3, 960, 852, 2.4, E.cam);
-  cam(56.9, 3.4, 960, 852, 2.48, E.dolly);
-  cam(60.3, 1.7, 1320, 742, 1.6, E.cam);
-  cam(62.0, 4.6, 1310, 740, 1.66, E.dolly);
+  cam(55.6, 1.3, 960, 770, 1.8, E.cam);
+  cam(56.9, 3.4, 960, 770, 1.86, E.dolly);
+  cam(60.3, 1.7, 1320, 700, 1.6, E.cam);
+  cam(62.0, 4.6, 1320, 700, 1.66, E.dolly);
   // Act 8, the real path.
-  cam(66.6, 1.4, 1140, 650, 1.5, E.cam);
-  cam(68.0, 5.4, 1150, 650, 1.56, E.dolly);
-  cam(73.4, 1.3, 1310, 650, 1.5, E.cam);
-  cam(74.7, 2.1, 1310, 650, 1.55, E.dolly);
-  cam(76.8, 1.4, 1250, 440, 1.6, E.cam);
-  cam(78.2, 0.9, 1250, 440, 1.63, E.dolly);
-  cam(79.1, 1.3, 420, 398, 2.3, E.cam);
-  cam(80.4, 1.6, 425, 400, 2.4, E.dolly);
+  cam(66.6, 1.4, 1150, 650, 1.5, E.cam);
+  cam(68.0, 5.4, 1160, 650, 1.56, E.dolly);
+  cam(73.4, 1.3, 1250, 600, 1.5, E.cam);
+  cam(74.7, 2.1, 1250, 600, 1.55, E.dolly);
+  cam(76.8, 1.4, 1230, 450, 1.6, E.cam);
+  cam(78.2, 0.9, 1230, 450, 1.63, E.dolly);
+  cam(79.1, 1.3, 560, 440, 1.8, E.cam);
+  cam(80.4, 1.6, 565, 440, 1.86, E.dolly);
   // Act 9, the control room (its own page, cut at 82.0).
   cam(82.0, 0.001, 1250, 455, 1.42, E.linear);
   cam(82.0, 2.0, 1260, 455, 1.47, E.dolly);
@@ -126,7 +128,7 @@
     SIGNALS.push({ path, color, t0: land - up, up, back: up * 0.82, bounce });
     if (path === "wire" || path === "trick" || path === "sense") return;
     FLASH.push({ kind: "hit", color, t: land });
-    if (bounce && color === "hot") FLASH.push({ kind: "burst", t: land, x: entryX(path) }, { kind: "refused", t: land });
+    if (bounce && color === "hot") FLASH.push({ kind: "refused", t: land });
   }
   const press = (actor, text, t) => {
     PRESS.push({ b: btn(actor, text), t });
@@ -146,33 +148,33 @@
   // Act 3: Sentinel files its request.
   GLOW.push({ id: "sentinel", t: v(3, 26.9) - 0.9, color: "warm" });
   signal("sentinel", "warm", v(3, 27.38), 0.85);
-  layer("ui/s02-pending", v(3, 27.38), 0.22);
+  layer("ui/s02-pending", v(3, 27.38), 0.08);
   RINGS.push({ kind: "keyholes", t: v(3, 30.7) });
   // Act 4: the planted note, then Sentinel trying to run it.
   press("attacker", "Trick the AI", v(4, 33.08) - 0.1);
   signal("trick", "hot", v(4, 34.0), 0.95);
   GLOW.push({ id: "sentinel", t: v(4, 34.0), color: "hot" });
   signal("sentinel", "hot", v(4, 39.0), 1.25, true);
-  layer("ui/s03-trick", v(4, 39.0), 0.2);
+  layer("ui/s03-trick", v(4, 39.0), 0.08);
   // Act 5: the forged pass.
   press("attacker", "Forge a pass", v(5, 43.86) - 0.15);
   signal("attacker", "hot", v(5, 47.38), 0.95, true);
-  layer("ui/s04-forged", v(5, 47.38), 0.2);
+  layer("ui/s04-forged", v(5, 47.38), 0.08);
   // Act 6: Jo approves.
   press("jo", "Approve", v(6, 50.08));
   signal("jo", "hot", v(6, 52.44), 0.8, true);
-  layer("ui/s05-jo", v(6, 52.44), 0.2);
+  layer("ui/s05-jo", v(6, 52.44), 0.08);
   // Act 7: Jo asks TideCloak for the operator role.
   press("jo", "Make me operator", v(7, 54.54) - 0.05);
-  layer("ui/s06-promote", v(7, 54.98), 0.25);
+  layer("ui/s06-promote", v(7, 54.98), 0.08);
   RINGS.push({ kind: "card", id: "kim", t: v(7, 60.52) }, { kind: "card", id: "raj", t: v(7, 60.68) });
   // Act 8: Kim, Kim again, Raj, and the command reaching the pump.
   press("kim", "Approve", v(8, 66.12) + 0.1);
   signal("kim", "live", v(8, 67.24), 0.85);
-  layer("ui/s07-kim", v(8, 67.24), 0.2);
+  layer("ui/s07-kim", v(8, 67.24), 0.08);
   press("kim", "Approve", v(8, 68.3));
   signal("kim", "warm", v(8, 69.38), 0.8, true);
-  layer("ui/s08-kim-again", v(8, 69.38), 0.2);
+  layer("ui/s08-kim-again", v(8, 69.38), 0.08);
   press("raj", "Approve", v(8, 71.0));
   signal("raj", "live", v(8, 73.14), 1.15);
   FLASH.push({ kind: "key2", t: v(8, 73.14) });
@@ -180,7 +182,7 @@
   const RAN = v(8, 75.5); // the stop command reaches the pump
   signal("wire", "ok", RAN, 1.15);
   FLASH.push({ kind: "pump", t: RAN });
-  layer("ui/s09-raj", RAN, 0.22);
+  layer("ui/s09-raj", RAN, 0.08);
   for (let i = 0; i < 16; i++) layer(`gauge/s09-fall-${String(i).padStart(2, "0")}`, v(8, 76.3) + 0.35 + i * 0.19, 0.1, "patch");
   // Act 9 and 10.
   const CONTROL = [82.0, 87.4];
@@ -193,11 +195,11 @@
   const REFUSALS = [T.sentinelRefused, T.forgeRefused, T.joRefused, T.kimAgainRefused];
   const KEYS = [[T.kimKey, 0], [T.rajKey, 1]];
   // [t, amplitude px, duration s] - a decaying two-axis shake in screen space.
-  const SHAKES = [...REFUSALS.map((t) => [t, 9, 0.55]), [RAN, 14, 0.8]];
+  const SHAKES = [...REFUSALS.map((t) => [t, 4, 0.45]), [RAN, 6, 0.6]];
   // [t, zoom gain, duration s] - a quick push in that relaxes back.
-  const PUNCHES = [...REFUSALS.map((t) => [t, 0.035, 0.7]), ...KEYS.map(([t]) => [t, 0.025, 0.7]), [RAN, 0.07, 1.4]];
+  const PUNCHES = [...REFUSALS.map((t) => [t, 0.018, 0.7]), ...KEYS.map(([t]) => [t, 0.012, 0.7]), [RAN, 0.035, 1.4]];
   // [t, colour, peak opacity, duration s] - the frame's edges flush with the beat's colour.
-  const EDGES = [...REFUSALS.map((t) => [t, "255,80,84", 0.55, 0.9]), [RAN, "61,220,140", 0.5, 1.6]];
+  const EDGES = []; // tried: a coloured wash at the frame edges muddied the picture
   const bump = (q) => (q < 0 || q > 1 ? 0 : q < 0.14 ? E.out(q / 0.14) : 1 - E.smooth((q - 0.14) / 0.86));
   function shakeAt(t) {
     let x = 0;
@@ -276,8 +278,26 @@
     });
 
     ov = document.getElementById("ov");
-    stageG = el("g", { transform: `translate(${SX} ${SY})` }, ov);
+    // No frame inside the frame: everything outside the console is painted the console's own colour,
+    // so no white page or rounded edge ever slides through a shot. The headline and the logo are
+    // redrawn light on the dark.
+    const C = G.console;
     parts = {};
+    parts.page = el("g", {}, ov);
+    el("path", {
+      d: `M-4000,-4000 H6000 V6000 H-4000 Z M${C.x + 2},${C.y + 2 + 28} a28,28 0 0 1 28,-28 H${C.x + C.w - 2 - 28} a28,28 0 0 1 28,28 V${C.y + C.h - 2 - 28} a28,28 0 0 1 -28,28 H${C.x + 2 + 28} a28,28 0 0 1 -28,-28 Z`,
+      fill: "#0b0d13",
+      "fill-rule": "evenodd",
+    }, parts.page);
+    parts.hero = el("g", {}, parts.page);
+    parts.logo = el("g", {}, parts.page);
+    const hero = el("text", { x: G.hero.x, y: G.hero.y + 56, "font-size": 73.6, "font-weight": 800, "letter-spacing": "-3.68", fill: "#f3f5fa" }, parts.hero);
+    hero.innerHTML = 'The AI can ask. <tspan fill="#5b85ff">Two people decide.</tspan>';
+    el("circle", { cx: 39.33, cy: 38.4, r: 6.42, fill: "#f3f5fa" }, parts.logo);
+    el("circle", { cx: 46.67, cy: 38.4, r: 6.42, fill: "#3d6bff", opacity: 0.9 }, parts.logo);
+    const word = el("text", { x: 58, y: 44.5, "font-size": 17, "font-weight": 700, "letter-spacing": "-0.3", fill: "#f3f5fa" }, parts.logo);
+    word.textContent = "Two-Person Rule";
+    stageG = el("g", { transform: `translate(${SX} ${SY})` }, ov);
 
     // Water flow along Line 3, in three runs between the gauge and the pump.
     const y = G.pipe.y;
@@ -328,14 +348,10 @@
     // Shockwaves: red off the lock for each refusal, blue off a keyhole for each key, green off the pump.
     const lockMid = [L.x + L.w / 2, L.y + L.h / 2];
     parts.waves = [
-      ...REFUSALS.flatMap((t) => [
-        { t, c: lockMid, r0: 50, r1: 300, w: 7, color: COLORS.hot, d: 0.85 },
-        { t: t + 0.09, c: lockMid, r0: 40, r1: 190, w: 3, color: COLORS.hot, d: 0.7 },
-      ]),
-      ...KEYS.map(([t, i]) => ({ t, c: [G.keyholes[i].x, G.keyholes[i].y], r0: G.keyholes[i].r, r1: 150, w: 5, color: COLORS.live, d: 0.9 })),
-      { t: RAN, c: [G.pump.x, G.pump.y], r0: G.pump.r, r1: 520, w: 9, color: COLORS.ok, d: 1.3 },
-      { t: RAN + 0.16, c: [G.pump.x, G.pump.y], r0: G.pump.r, r1: 340, w: 4, color: COLORS.ok, d: 1.1 },
-      { t: RAN, c: lockMid, r0: 60, r1: 260, w: 5, color: COLORS.ok, d: 1.0 },
+      ...REFUSALS.map((t) => ({ t, c: lockMid, r0: 70, r1: 165, w: 2.5, color: COLORS.hot, d: 0.65 })),
+      ...KEYS.map(([t, i]) => ({ t, c: [G.keyholes[i].x, G.keyholes[i].y], r0: G.keyholes[i].r, r1: 70, w: 2.5, color: COLORS.live, d: 0.7 })),
+      { t: RAN, c: [G.pump.x, G.pump.y], r0: G.pump.r, r1: 210, w: 3, color: COLORS.ok, d: 1.1 },
+      { t: RAN, c: lockMid, r0: 70, r1: 160, w: 2.5, color: COLORS.ok, d: 0.9 },
     ].map((w) => ({ ...w, n: el("circle", { cx: w.c[0], cy: w.c[1], r: w.r0, fill: "none", stroke: w.color, "stroke-width": w.w, opacity: 0 }, stageG) }));
 
     // Signals: sampled once, then placed by time.
@@ -379,7 +395,7 @@
     // The close: the page whitens around its own mark, which the camera flies into.
     parts.veil = el("rect", { x: -200, y: -200, width: 2400, height: 1600, fill: "#ffffff", opacity: 0 }, ov);
     parts.mark = el("g", { opacity: 0 }, ov);
-    el("circle", { cx: 39.33, cy: 38.4, r: 6.42, fill: "#111111" }, parts.mark);
+    parts.markInk = el("circle", { cx: 39.33, cy: 38.4, r: 6.42, fill: "#111111" }, parts.mark);
     el("circle", { cx: 46.67, cy: 38.4, r: 6.42, fill: "#1a4be0", style: "mix-blend-mode:multiply" }, parts.mark);
   }
 
@@ -390,9 +406,20 @@
   function renderBody(t) {
     // Camera.
     const c = camAt(t);
+    if (t < 92.2) {
+      // Keep the frame inside the page (the control room's page is taller).
+      const pageH = t >= CONTROL[0] && t < CONTROL[1] ? 1233 : 1080;
+      c.x = clamp(c.x, 960 / c.z, 1920 - 960 / c.z);
+      c.y = clamp(c.y, 540 / c.z, pageH - 540 / c.z);
+    }
     const z = c.z * punchAt(t);
     const [sx, sy] = shakeAt(t);
     camEl.style.transform = `translate(${(960 - c.x * z + sx).toFixed(2)}px, ${(540 - c.y * z + sy).toFixed(2)}px) scale(${z.toFixed(5)})`;
+    // The headline and the logo show only when the frame holds them whole: never cut by the top edge.
+    const frameTop = c.y - 540 / z;
+    const frameLeft = c.x - 960 / z;
+    parts.hero.setAttribute("opacity", Math.min(clamp((100 - frameTop) / 30, 0, 1), clamp((50 - frameLeft) / 22, 0, 1)).toFixed(3));
+    parts.logo.setAttribute("opacity", t >= 92.2 ? 1 : clamp((22 - frameTop) / 12, 0, 1).toFixed(3));
 
     // Shockwaves and edge flushes.
     for (const w of parts.waves) {
@@ -403,7 +430,7 @@
       }
       w.n.setAttribute("r", mix(w.r0, w.r1, E.out(q)).toFixed(2));
       w.n.setAttribute("stroke-width", mix(w.w, 0.5, q).toFixed(2));
-      w.n.setAttribute("opacity", (0.95 * (1 - E.smooth(q))).toFixed(3));
+      w.n.setAttribute("opacity", (0.75 * (1 - E.smooth(q))).toFixed(3));
     }
     let edge = null;
     for (const [t0, rgb, peak, d] of EDGES) {
@@ -432,6 +459,7 @@
 
     const land = onLanding(t);
     stageG.style.visibility = land && t < 93.6 ? "visible" : "hidden";
+    parts.page.style.visibility = land && t < 93.6 ? "visible" : "hidden";
 
     // Flow: upstream keeps moving; downstream stops on the hook's "cut"; all of it dims when the command lands.
     const up = -((t * 14) / 0.6);
@@ -534,7 +562,11 @@
     }
 
     // The close.
-    parts.veil.setAttribute("opacity", fade(t, 92.55, 0.75).toFixed(3));
+    const veil = fade(t, 92.55, 0.75);
+    parts.veil.setAttribute("opacity", veil.toFixed(3));
+    // The mark's ink turns from light (on the dark page) to the brand's near-black as the page whitens.
+    const ink = Math.round(mix(243, 17, veil));
+    parts.markInk.setAttribute("fill", `rgb(${ink},${ink},${Math.round(mix(250, 17, veil))})`);
     parts.mark.setAttribute("opacity", t >= 92.2 && t < 93.62 ? 1 : 0);
     renderEnd(t);
   }

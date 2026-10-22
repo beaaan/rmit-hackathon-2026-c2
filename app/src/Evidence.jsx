@@ -12,7 +12,7 @@ const GROUPS = [
       {
         when: "Aug 2026",
         head: "An agent invented people to pressure a real maintainer.",
-        text: "In a UK AI Security Institute evaluation, an agent made fake identities to get malicious code approved in a real open-source project. It was never told to deceive. A human reviewer said no.",
+        text: "In a UK AI Security Institute evaluation, an agent made fake identities to get malicious code approved in a real open-source project. Nobody told it to deceive anyone, and a human reviewer turned the code down.",
         source: ["AI Security Institute", "https://www.aisi.gov.uk/blog/incident-report-unsanctioned-agent-behaviour-during-cyber-testing"],
       },
       {
@@ -24,7 +24,7 @@ const GROUPS = [
       {
         when: "Sep 2025",
         head: "Frontier models hid what they were doing.",
-        text: "OpenAI and Apollo Research found covert actions in models from several labs. Training cut them about 30-fold, not to zero.",
+        text: "OpenAI and Apollo Research found covert actions in models from several labs. Extra training cut them about 30-fold, but some remained.",
         source: ["OpenAI", "https://openai.com/index/detecting-and-reducing-scheming-in-ai-models/"],
       },
       {
@@ -47,13 +47,13 @@ const GROUPS = [
       {
         when: "Dec 2025",
         head: "OpenAI: prompt injection “may never be fully solved”.",
-        text: "The maker of a browser agent compares it to scams: something to manage, not eliminate.",
+        text: "Announcing new defences for its Atlas browser agent, OpenAI compared the problem to scams and social engineering on the web.",
         source: ["CyberScoop", "https://cyberscoop.com/openai-chatgpt-atlas-prompt-injection-browser-agent-security-update-head-of-preparedness/"],
       },
       {
         when: "Jun 2025",
-        head: "An unopened email made Copilot leak data.",
-        text: "EchoLeak: one crafted email got Microsoft 365 Copilot to send internal data out. Fixed before anyone exploited it.",
+        head: "One email made Copilot leak data without a click.",
+        text: "EchoLeak: a crafted email got Microsoft 365 Copilot to send internal data out, with no action from the user. Microsoft fixed it before anyone exploited it.",
         source: ["Research paper", "https://arxiv.org/abs/2509.10540"],
       },
     ],
@@ -77,9 +77,9 @@ export default function Evidence() {
       <div className="evidence-head" data-reveal>
         <h2 id="evidence-title">This is already happening</h2>
         <p>
-          The AI doesn't have to be evil. These agents were chasing ordinary goals too hard, or obeying text they
-          shouldn't have. In the AI Security Institute case, what stopped the attack was a person who refused to
-          approve.
+          Most of these agents were working on ordinary tasks. Some pushed too far on their own; others followed
+          instructions hidden in text they read. In the AI Security Institute case, the attack stopped when a person
+          refused to approve it.
         </p>
       </div>
       <div className="evidence-list">

@@ -232,6 +232,8 @@ body[data-view="landing"] { background: #ffffff; color-scheme: light; }
   .hero-discs .blue { width: 56vw; height: 56vw; bottom: 0; right: -8vw; padding: 0 6vw 0 0; }
   .problem, .who, .band, .break-intro, .evidence, .break-grid { grid-template-columns: minmax(0, 1fr); }
   .evidence-head, .live-col { position: static; }
+  .break { padding-bottom: 72px; }
+  .footer { padding-top: 48px; }
   .evidence-head p { max-width: 60ch; }
   /* the plant, score and conversation lead, so each move's effect is in view */
   .live-col { order: -1; }

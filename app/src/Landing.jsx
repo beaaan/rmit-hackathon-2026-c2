@@ -68,8 +68,8 @@ export default function Landing(props) {
             Two people decide.
           </h1>
           <p className="lead">
-            An AI watches a city's water plant all night. It can propose a shutdown, but nothing runs until two
-            operators approve. No AI, admin or hacked server can skip that.
+            An AI watches a city's water plant overnight and can propose a shutdown. It runs only once two
+            operators approve, and neither the AI, an admin nor a server hacker can skip that step.
           </p>
           <div className="hero-actions">
             <a className="pill" href="#try">
@@ -96,8 +96,8 @@ export default function Landing(props) {
         <div className="problem-copy" data-reveal>
           <h2 id="problem-title">Why plants keep AI out</h2>
           <p className="statement">
-            AI could catch a burst water main in seconds. Plants keep it out anyway: one stolen key or one tricked AI
-            could cut a city's water.
+            AI could spot a burst main in seconds. Plants keep it from the controls because one stolen key or one
+            tricked AI could cut a city's water.
           </p>
         </div>
         <div className="problem-discs" data-reveal>
@@ -120,8 +120,8 @@ export default function Landing(props) {
         <div>
           <h2 id="band-title">Built with TideCloak</h2>
           <p>
-            No password store, no signing key on any server, and nobody becomes an operator unless two of the three
-            admins agree. That is what lets the AI help without anyone being able to act alone.
+            TideCloak keeps no password store and puts no signing key on any server. Making someone an operator takes
+            two of the three admins, so even the people who run the system can't give themselves the right to approve.
           </p>
         </div>
         <figure className="disc photo">
@@ -152,7 +152,7 @@ const WHO = [
     verdict: "No",
     tone: "dark",
     reply: ["Run the shutdown", "Refused", "Needs 2 operator approvals, has 0."],
-    fact: "It has no login and no key. Trick it all you like: it holds nothing that counts as an approval.",
+    fact: "It has no login and no key, so however it's tricked, it has nothing that counts as an approval.",
   },
   {
     id: "admin",
@@ -160,7 +160,7 @@ const WHO = [
     verdict: "No",
     tone: "dark",
     reply: ["Approve the shutdown", "Refused", "Signed in, but not a plant operator."],
-    fact: "He can't make himself an operator either. In TideCloak that change waits for 2 of the 3 admins.",
+    fact: "He can't make himself an operator either. In TideCloak, that change waits for 2 of the 3 admins.",
   },
   {
     id: "server",
@@ -168,7 +168,7 @@ const WHO = [
     verdict: "No",
     tone: "dark",
     reply: ["Forged approval", "Refused", "Not signed by this realm's key."],
-    fact: "No server holds the key that signs logins. Tide's network signs them; the plant only checks.",
+    fact: "No server holds the key that signs logins. Tide's network signs them, and the plant only checks the signature.",
   },
   {
     id: "kim",
@@ -176,7 +176,7 @@ const WHO = [
     verdict: "Not yet",
     tone: "grey",
     reply: ["Kim approves", "1 of 2", "The same person twice still counts once."],
-    fact: "One operator's approval counts, but one is never enough.",
+    fact: "Her approval counts as one of the two the command needs.",
   },
   {
     id: "both",
@@ -184,7 +184,7 @@ const WHO = [
     verdict: "Yes",
     tone: "blue",
     reply: ["Raj approves", "2 of 2", "Pumps stopped."],
-    fact: "Two different operators, each proven by TideCloak. Only then does the command run.",
+    fact: "The command runs once two different operators, each signed in through TideCloak, have approved it.",
   },
 ];
 

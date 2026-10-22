@@ -88,8 +88,9 @@ export default function BreakIt({ session, refreshAll, ...data }) {
       <div className="break-intro" data-reveal>
         <h2 id="try-title">Try to break it</h2>
         <p>
-          This is the working prototype. Your goal: get Line 3's pumps stopped without two different operators
-          agreeing. Trick the AI, forge a pass, lean on the admin. Everything you do hits the real controller.
+          This is the working prototype, connected to the real controller. See if you can get Line 3's pumps stopped
+          without two different operators agreeing: trick the AI, forge an operator's pass, get the admin to approve,
+          or approve twice as one person.
           {AUTH_MODE === "rehearsal" && <span className="muted"> Rehearsal mode: sign-ins come from a stand-in realm on this machine.</span>}
         </p>
       </div>

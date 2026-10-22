@@ -14,12 +14,13 @@ submission. The research behind the technical decisions is in [`TIDECLOAK-NOTES.
 - [x] Every bypass in the storyline is refused on screen and in the audit trail: the prompt-injected
       AI, a forged operator pass, the admin approving, one operator approving twice. Only two
       different operators stop the pumps.
-- [x] Landing page with a live 3D console (the five actors over their own controls), sourced
+- [x] Landing page with a live plant diagram (the five actors' signal lines over their own controls), sourced
       incidents (`docs/RESEARCH.md`), and a projector-ready control room (`#/control-room`).
 - [x] Shareable static preview: `npm run build:preview --prefix app`.
-- [ ] **TideCloak realm** (Phase 1), then the app's `tide` mode tested against it, including Jo's
-      self-promotion as a real change request (Phase 3).
-- [ ] README overview (≤ 300 words) and the realm setup steps (Phase 5).
+- [x] Realm setup in one command: `npm run realm` (rehearsed in Docker up to licensing).
+- [ ] **TideCloak realm** enrolled (Phase 1), then the app's `tide` mode tested against it, including
+      Jo's self-promotion as a real change request (Phase 3).
+- [x] README overview (≤ 300 words) and the realm setup steps (Phase 5).
 - [ ] Video and submission (Phase 6).
 
 ---
@@ -97,9 +98,9 @@ All names, plants and readings are synthetic.
  Web app (static, Vite): landing console and control room. Reads the controller; holds no keys.
 ```
 
-- **App (`app/`)**: Vite + React + three.js, **not** the Next.js template. Signs in with
+- **App (`app/`)**: Vite + React, **not** the Next.js template. Signs in with
   `@tidecloak/js` when `controller/tidecloak.json` exists (`tide` mode); otherwise uses a stand-in
-  realm generated on the machine (`rehearsal` mode). Screens: the landing console (3D stage with the
+  realm generated on the machine (`rehearsal` mode). Screens: the landing console (plant diagram with the
   five actors, each over their own controls) and the control room (lines, decision, chart, audit trail).
   There is no app server: Sentinel posts straight to the controller.
 - **Controller (`controller/`)**: small Express service standing in for the plant-side gateway (PLC).
@@ -167,31 +168,24 @@ phase until it passes, and use the fallback if it doesn't.
 
 ### Phase 1: TideCloak up and governed (15:30–17:00)
 
-You do this on your laptop; I prepare the repo in parallel.
+You do this on your laptop. `npm run realm` (`scripts/tide-realm.js`, adapted from Tide's agent pack)
+does everything except what needs a person; the realm is `riverbend`, not the initializer's
+`nextjs-test`, and `npm init @tidecloak/nextjs` is no longer needed (never run it inside this repo:
+it would overwrite our Vite `app/`).
 
-1. [ ] Start TideCloak:
-   ```bash
-   docker run --name mytidecloak -d -v .:/opt/keycloak/data/h2 -p 8080:8080 \
-     -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=password \
-     tideorg/tidecloak-dev:latest
-   ```
-2. [ ] Create the realm **outside this repo**. Our `app/` is Vite, not the Next.js template, so
-   running `npm init @tidecloak/nextjs@latest app` here would overwrite it. Running the initializer
-   in a scratch folder is fine: keep its realm (`nextjs-test`) and client (`myclient`). Open the
-   enrolment link it prints and enrol as **Jo**. Wait for it to finish on its own.
-3. [ ] On `myclient`, allow redirect URI `http://localhost:3000/*` and web origin
-   `http://localhost:3000`. Copy `tidecloak.json` (Apps → myclient → Credentials) to
-   `controller/tidecloak.json` (gitignored), run `npm run demo` (now in `tide` mode) and log in at
-   http://localhost:3000 as Jo.
-4. [ ] **While Jo is the only admin (threshold 1, so each change applies on Jo's approval):**
-   - [ ] Create realm roles `plant-operator` and `plant-viewer`. Authorize each change request in **QEA Approvals**.
-   - [ ] Add users **kim** and **raj** (People → Add a user). Each enrols via their one-time link in their own browser profile.
-   - [ ] Assign `plant-operator` to kim and raj. Authorize.
-   - [ ] Add `plant-viewer` to `default-roles-nextjs-test`. Authorize.
-5. [ ] **Then add the other admins, in this order:**
-   - [ ] Grant `tide-realm-admin` to kim → authorize (2 admins: threshold still 1).
-   - [ ] Grant `tide-realm-admin` to raj → authorize (3 admins: threshold now **2**).
-6. [ ] Download `tidecloak.json` again if any keys changed, and restart `npm run demo`. Never commit it.
+1. [ ] `cp .env.example .env`: master-admin password, licence email, `TIDE_TERMS_ACCEPTED=yes`
+   (the licence owner's own answers).
+2. [ ] `npm run realm`. While the realm has no admin yet, the script makes every governed change and
+   approves it itself: realm, client `myclient` (redirect `http://localhost:3000/*`, web origin
+   `http://localhost:3000`, DPoP not required), role `plant-operator`, users jo/kim/raj,
+   `plant-operator` for kim and raj. Then it prints three enrolment links.
+3. [ ] Enrol Jo, Kim and Raj, each in their own Chrome profile. The script then makes Jo the first
+   `tide-realm-admin` (from here on only admins can approve changes) and writes
+   `controller/tidecloak.json` (gitignored).
+4. [ ] **Then add the other admins, in tide-console as Jo, one at a time:**
+   - [ ] Grant `tide-realm-admin` to kim → approve in QEA Approvals (2 admins: threshold still 1).
+   - [ ] Grant `tide-realm-admin` to raj → approve (3 admins: threshold now **2**).
+5. [ ] `npm run realm -- status` shows 3 admins and 2 approvals needed. Restart `npm run demo`.
 
 **Gate A (by 17:00):** Kim and Raj can each log in; as Jo, assigning any role creates a change request
 showing **0/2** that Jo alone cannot commit.
@@ -213,13 +207,13 @@ I write this; you pull and run it.
   - [x] CORS for `http://localhost:3000` only.
   - [x] Unit tests with a locally generated Ed25519 key and hand-made tokens: wrong signature, wrong role,
         expired, same operator twice, two distinct operators.
-- [x] **App** (`app/`, Vite + React + three.js)
+- [x] **App** (`app/`, Vite + React)
   - [x] Plant dashboard: 3 lines, pressure chart, pump status, polled from the controller's `/plant/state` (control room).
   - [x] Proposal with Sentinel's evidence and the controller's approval count, shown as the lock's two keyholes.
   - [x] "Approve" calls the controller directly with the signed-in user's token; the app server never sees it.
   - [x] Audit trail from the controller's log, with a short reason for every refusal.
   - [x] ~~Role-gated UI~~ Changed: Jo *can* press Approve, so the demo shows the controller refusing him ("Not an operator").
-  - [x] Landing console: 3D stage where every attempt plays out (refusals bounce off the lock, approvals turn keys), the five actors' controls under their figures.
+  - [x] Landing console: a control-room diagram where every attempt plays out (refusals bounce off the lock, approvals fill a keyhole), each actor's signal line ending over their controls. (Was a three.js stage; redrawn as SVG on 22 Oct.)
   - [ ] Tested in `tide` mode against a real realm (needs Phase 1).
 - [x] **Sentinel** (`sentinel/`)
   - [x] Node script: watches the controller's simulated plant (the plant sim lives in the controller,
@@ -263,9 +257,9 @@ the next step in the README. Don't sacrifice the video for this.
 
 - [x] README starts with the official template: badge, `## Project overview`, one-sentence
       description, "Built with TideCloak" line, the five numbered judging sections, then `## Setup`.
-- [ ] Project overview **≤ 300 words** (check with `wc -w`). Draft answers in §9 below.
+- [x] Project overview **≤ 300 words** (check with `wc -w`).
 - [x] `## Setup`: how to run controller + app + Sentinel, and the preview build.
-- [ ] `## Setup`: Docker command and the realm checklist from Phase 1.
+- [x] `## Setup`: `npm run realm` and the steps that need a person.
 - [ ] Honest limits section (short): controller enforces the count; session compromise = operator
       compromise; no workload attestation for the AI.
 
@@ -282,6 +276,9 @@ Sleep between Phase 5 and Phase 6. Buffer is built into the morning.
 ---
 
 ## 8. Video script (2:00)
+
+Superseded by [`VIDEO.md`](VIDEO.md), which follows the current screens click by click. The first
+draft is kept below.
 
 | Time | Section | On screen | Voice-over (draft) |
 |---|---|---|---|
@@ -331,7 +328,7 @@ README.md              project overview (template) + setup
 docs/PLAN.md           this file
 docs/TIDECLOAK-NOTES.md research notes and sources
 docs/RESEARCH.md       sourced incidents (AI acting on its own, prompt injection, water plants)
-app/                   Vite + React + three.js: landing console and control room
+app/                   Vite + React: landing console and control room
 controller/            plant controller service + tests
 sentinel/              scripted AI agent
 scripts/demo.js        starts controller, Sentinel and app (`npm run demo`)

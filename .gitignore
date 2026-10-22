@@ -21,3 +21,4 @@ app/dist-preview/
 
 # Vite cache
 app/.vite/
+.tide-pack/

@@ -9,6 +9,7 @@
   },
   "scripts": {
     "setup": "npm --prefix controller install && npm --prefix app install",
+    "realm": "node scripts/tide-realm.js",
     "demo": "node scripts/demo.js",
     "test": "npm --prefix controller test"
   }

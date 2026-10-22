@@ -22,16 +22,39 @@ function sessionFromClaims(claims) {
   };
 }
 
+// TideCloak sends people back to /auth/redirect; this remembers which screen they signed in from.
+const RETURN_KEY = "tide-return-to";
+const remember = (hash) => {
+  try {
+    sessionStorage.setItem(RETURN_KEY, /^#\/[\w-]*$/.test(hash) ? hash : "");
+  } catch {}
+};
+const recall = () => {
+  try {
+    const hash = sessionStorage.getItem(RETURN_KEY) ?? "";
+    sessionStorage.removeItem(RETURN_KEY);
+    return hash;
+  } catch {
+    return "";
+  }
+};
+
 const tide = {
   mode: "tide",
   async init() {
     const config = await fetch("/tidecloak.json").then((r) => r.json());
     const loggedIn = await IAMService.initIAM(config);
-    if (location.pathname.startsWith("/auth/redirect")) history.replaceState(null, "", "/");
+    if (location.pathname.startsWith("/auth/redirect")) {
+      history.replaceState(null, "", `/${recall()}`);
+      dispatchEvent(new HashChangeEvent("hashchange"));
+    }
     if (!loggedIn) return null;
     return sessionFromClaims(decodeJwt(await IAMService.getToken()));
   },
-  login: () => IAMService.doLogin(),
+  login: () => {
+    remember(location.hash);
+    return IAMService.doLogin();
+  },
   logout: () => IAMService.doLogout(),
   getToken: () => IAMService.getToken(),
 };

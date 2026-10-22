@@ -39,13 +39,23 @@ const tide = {
 // sessionStorage is per tab, so two tabs can be two different operators.
 const PERSONA_KEY = "rehearsal-persona";
 // Storage can be unavailable (private windows, embedded previews); the page still works without it.
+let chosen = null;
 const readPersona = () => {
   try {
-    return sessionStorage.getItem(PERSONA_KEY);
+    return sessionStorage.getItem(PERSONA_KEY) ?? chosen;
   } catch {
-    return null;
+    return chosen;
   }
 };
+const writePersona = (persona) => {
+  chosen = persona;
+  try {
+    if (persona) sessionStorage.setItem(PERSONA_KEY, persona);
+    else sessionStorage.removeItem(PERSONA_KEY);
+  } catch {}
+};
+// The preview keeps its controller in the page, so a reload would wipe the plant; it switches in place.
+const switchPersona = () => (globalThis.__simTokens ? dispatchEvent(new Event("persona-change")) : location.reload());
 let rehearsalTokens = null;
 
 const rehearsal = {
@@ -66,12 +76,12 @@ const rehearsal = {
     return persona && rehearsalTokens[persona] ? sessionFromClaims(decodeJwt(rehearsalTokens[persona])) : null;
   },
   login(persona) {
-    sessionStorage.setItem(PERSONA_KEY, persona);
-    location.reload();
+    writePersona(persona);
+    switchPersona();
   },
   logout() {
-    sessionStorage.removeItem(PERSONA_KEY);
-    location.reload();
+    writePersona(null);
+    switchPersona();
   },
   // The story acts as a named person ("Kim approves"); the control room acts as the chosen persona.
   async getToken(persona) {

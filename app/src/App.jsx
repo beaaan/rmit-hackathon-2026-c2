@@ -34,10 +34,14 @@ export default function App() {
   const [audit, , refreshAudit] = usePoll(controller.audit, 1000);
 
   useEffect(() => {
-    auth.init().then(setSession, (err) => {
-      setAuthError(err.message);
-      setSession(null);
-    });
+    const load = () =>
+      auth.init().then(setSession, (err) => {
+        setAuthError(err.message);
+        setSession(null);
+      });
+    load();
+    window.addEventListener("persona-change", load);
+    return () => window.removeEventListener("persona-change", load);
   }, []);
 
   const data = { session, authError, plant, plantError, commands, audit, refreshAll: () => Promise.all([refreshCommands(), refreshAudit()]) };

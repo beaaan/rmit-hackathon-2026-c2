@@ -1,0 +1,24 @@
+{
+  "name": "plant-controller",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mock plant-side gateway: executes a command only after two distinct TideCloak-verified operators approve it.",
+  "type": "module",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=20.9"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "dev:keys": "node scripts/dev-keys.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@tidecloak/verify": "^0.14.33",
+    "express": "^5.3.0"
+  },
+  "devDependencies": {
+    "jose": "^5.10.0"
+  }
+}

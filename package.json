@@ -1,0 +1,15 @@
+{
+  "name": "two-person-rule",
+  "version": "0.1.0",
+  "private": true,
+  "description": "An AI proposes plant commands; only two TideCloak-verified operators together can run one.",
+  "type": "module",
+  "engines": {
+    "node": ">=20.9"
+  },
+  "scripts": {
+    "setup": "npm --prefix controller install && npm --prefix app install",
+    "demo": "node scripts/demo.js",
+    "test": "npm --prefix controller test"
+  }
+}

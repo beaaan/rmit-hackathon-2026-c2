@@ -40,14 +40,45 @@ Watch a prompt-injected AI get refused, an admin's self-promotion stall in TideC
 
 ## Setup
 
-<!-- How to install and run the prototype. -->
+Needs Node ≥ 20.9.
 
-Not built yet. The planned setup (TideCloak dev server in Docker, realm with three admins and a `plant-operator` role, then the app, controller and Sentinel) is in [`docs/PLAN.md` → Phase 1](docs/PLAN.md#phase-1-tidecloak-up-and-governed-1530-1700).
+```bash
+npm run setup     # installs controller/ and app/
+npm run demo      # controller :4000, Sentinel, web app :3000
+```
+
+Open http://localhost:3000. Under the headline is the working prototype: a 3D console with the plant
+in the back (Line 3's pressure gauge, the two-key lock, the pump) and the five who can act in front,
+each standing over their own controls. Start a pressure spike so Sentinel proposes a shutdown, then
+try to get it run without two operators: trick Sentinel through its maintenance log, forge an
+operator's pass, have Jo the admin approve or promote himself, approve twice as Kim. The next move
+pulses; Raj's approval is the only thing that opens the lock. Below it: why plants keep AI out, real
+incidents of AI deceiving, escaping and being prompt-injected ([`docs/RESEARCH.md`](docs/RESEARCH.md)),
+and what TideCloak does here. The operators' control room is at `#/control-room`.
+
+`npm run build:preview --prefix app` builds a static preview (`app/dist-preview/`) in which the
+controller, Sentinel and a stand-in sign-in service run inside the page.
+
+Photographs and the clip on the page are from Wikimedia Commons, credited in the page footer and in
+`app/public/photos/credits.json`.
+
+- **TideCloak mode (the real demo):** put your realm's `tidecloak.json` in `controller/`
+  (tide-console → Apps → myclient → Credentials). Operators then sign in with TideCloak, each in their
+  own browser profile. Realm setup (Docker, three admins, `plant-operator` role) is in
+  [`docs/PLAN.md` → Phase 1](docs/PLAN.md#phase-1-tidecloak-up-and-governed-1530-1700).
+- **Rehearsal mode:** without `tidecloak.json`, the demo generates a stand-in realm on your machine
+  and shows a Jo / Kim / Raj switch (each browser tab can be a different person). Practice only.
+
+`npm test` runs the controller tests. API and limits: [`controller/README.md`](controller/README.md).
+
+The control-room screen follows [taste-skill](https://github.com/leonxlnx/taste-skill)'s app-screen rules
+("data-terminal" style); its chart helper is vendored in `app/src/vendor/charts.js` (MIT).
 
 ## Project documents
 
 | Document | What's in it |
 |---|---|
+| [`docs/RESEARCH.md`](docs/RESEARCH.md) | Real incidents: AI that deceives, escapes and gets prompt-injected, with sources |
 | [`docs/PLAN.md`](docs/PLAN.md) | Work plan: architecture, demo storyline, phased timeline, video script, risks |
 | [`docs/TIDECLOAK-NOTES.md`](docs/TIDECLOAK-NOTES.md) | What the Tide docs say about quorum, tokens, Forseti and AI agents, with sources |
 | [`docs/IDEAS.md`](docs/IDEAS.md) | The 20 ideas we considered, the ranking, and why we chose this one |

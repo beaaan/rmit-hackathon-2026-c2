@@ -186,26 +186,27 @@ for more than 45 minutes, keep going with Phase 2 against a 1-admin realm and ad
 
 I write this; you pull and run it.
 
-- [ ] **Controller** (`controller/`)
-  - [ ] `POST /commands` (from app server): register a pending command `{id, action, line, reason, proposedBy}`.
-  - [ ] `GET /commands/:id`: what operators see, served by the controller itself (not the app).
-  - [ ] `POST /commands/:id/approve` (from operator browser, `Authorization: Bearer <token>`):
+- [x] **Controller** (`controller/`)
+  - [x] `POST /commands` (from app server): register a pending command `{id, action, line, reason, proposedBy}`.
+  - [x] `GET /commands/:id`: what operators see, served by the controller itself (not the app).
+  - [x] `POST /commands/:id/approve` (from operator browser, `Authorization: Bearer <token>`):
         verify with `@tidecloak/verify` + `plant-operator`; record `sub` once per command.
-  - [ ] Execute at 2 **distinct** subjects; expose `/plant/state` for the dashboard.
-  - [ ] `POST /commands/:id/execute` with no or insufficient approvals → `403` with reason (Sentinel's attack path).
-  - [ ] Append-only audit log (JSON lines) + `GET /audit`.
-  - [ ] CORS for `http://localhost:3000` only.
-  - [ ] Unit tests with a locally generated Ed25519 key and hand-made tokens: wrong signature, wrong role,
+  - [x] Execute at 2 **distinct** subjects; expose `/plant/state` for the dashboard.
+  - [x] `POST /commands/:id/execute` with no or insufficient approvals → `403` with reason (Sentinel's attack path).
+  - [x] Append-only audit log (JSON lines) + `GET /audit`.
+  - [x] CORS for `http://localhost:3000` only.
+  - [x] Unit tests with a locally generated Ed25519 key and hand-made tokens: wrong signature, wrong role,
         expired, same operator twice, two distinct operators.
 - [ ] **App** (`app/`)
-  - [ ] Plant dashboard: 3 lines, pressure sparkline, pump status, simulated in the server.
+  - [ ] Plant dashboard: 3 lines, pressure sparkline, pump status, polled from the controller's `/plant/state`.
   - [ ] Proposal queue with Sentinel's reasoning and the controller's approval count.
   - [ ] Operator view (`plant-operator` only, via TideCloak middleware): "Approve shutdown" calls the controller directly with the user's token.
   - [ ] Audit trail page, merged from controller log.
   - [ ] Role-gated UI: Jo sees the dashboard but no Approve button.
-- [ ] **Sentinel** (`sentinel/`)
-  - [ ] Node script: replays a synthetic sensor CSV, detects the spike, posts a proposal.
-  - [ ] `--inject` mode: poisoned log line → tries `POST /commands/:id/execute` directly → logs the `403`.
+- [x] **Sentinel** (`sentinel/`)
+  - [x] Node script: watches the controller's simulated plant (the plant sim lives in the controller,
+        not the app), detects the spike, posts a proposal.
+  - [x] `--inject` mode: poisoned log line → tries `POST /commands/:id/execute` directly → logs the `403`.
 
 **Gate B (by 20:00):** the full happy path works: spike → proposal → Kim approves → Raj approves →
 pumps stop. **If it fails:** cut the dashboard to a table and keep the approvals working.

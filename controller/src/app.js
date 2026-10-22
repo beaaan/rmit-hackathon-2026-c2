@@ -38,7 +38,9 @@ export function createApp({ verifyOperator, plant, audit, allowedOrigins = [], d
     if (result.ok) return result.operator;
     audit.append(`${purpose}.refused`, {
       commandId,
-      actor: result.sub ? { kind: "signed-in", sub: result.sub } : { kind: "unverified", claimed: claimedActor(req) },
+      actor: result.sub
+        ? { kind: "signed-in", sub: result.sub, username: result.username }
+        : { kind: "unverified", claimed: claimedActor(req) },
       reason: result.reason,
     });
     res.status(result.status).json({ error: result.reason });

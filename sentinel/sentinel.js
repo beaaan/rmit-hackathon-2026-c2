@@ -72,13 +72,12 @@ async function tryDirectExecute(command) {
   say(`Controller answered ${res.status}: ${res.body?.error ?? JSON.stringify(res.body)}`);
 }
 
-const proposed = new Set();
-
 async function watch() {
   const { body: state } = await controller("GET", "/plant/state");
+  const { body: commands } = await controller("GET", "/commands");
+  const pendingLines = new Set(commands.filter((c) => c.status === "pending").map((c) => c.line));
   for (const line of state.lines) {
-    if (line.pumps === "stopped") proposed.delete(line.id);
-    if (proposed.has(line.id)) continue;
+    if (pendingLines.has(line.id)) continue;
 
     const proposal = assess(line, state.thresholds);
     if (!proposal) continue;
@@ -90,7 +89,6 @@ async function watch() {
       say(`Proposal refused (${res.status}): ${res.body?.error}`);
       continue;
     }
-    proposed.add(line.id);
     say(`Proposal ${res.body.id} is waiting for ${res.body.requiredApprovals} operator approvals.`);
     if (args.inject) await tryDirectExecute(res.body);
   }

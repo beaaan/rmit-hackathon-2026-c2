@@ -29,7 +29,13 @@ export function createOperatorVerifier(tidecloakConfig, { role = OPERATOR_ROLE }
       ...(claims.resource_access?.[client]?.roles ?? []),
     ]);
     if (!roles.has(role)) {
-      return { ok: false, status: 403, reason: `Signed-in user does not hold the ${role} role`, sub: claims.sub };
+      return {
+        ok: false,
+        status: 403,
+        reason: `Signed-in user does not hold the ${role} role`,
+        sub: claims.sub,
+        username: claims.preferred_username,
+      };
     }
 
     return {

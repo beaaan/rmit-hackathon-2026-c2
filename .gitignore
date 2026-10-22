@@ -11,3 +11,6 @@ controller/tidecloak.json
 # TideCloak dev container's H2 database, if the volume is mounted in the repo
 *.mv.db
 *.trace.db
+
+# App build output
+app/dist/

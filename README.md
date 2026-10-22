@@ -40,19 +40,24 @@ Watch a prompt-injected AI get refused, an admin's self-promotion stall in TideC
 
 ## Setup
 
-Work in progress. What runs today:
+Needs Node ≥ 20.9.
 
 ```bash
-# Plant controller (needs tidecloak.json from your realm, or `npm run dev:keys` to rehearse offline)
-cd controller && npm install && npm start      # http://localhost:4000
-
-# Sentinel, the operations AI (no credentials): start a Line 3 spike, propose, try the injected execute
-cd sentinel && npm run demo:inject
+npm run setup     # installs controller/ and app/
+npm run demo      # controller :4000, Sentinel, web app :3000
 ```
 
-Details and the API: [`controller/README.md`](controller/README.md). The TideCloak realm setup
-(Docker, three admins, `plant-operator` role) is in [`docs/PLAN.md` → Phase 1](docs/PLAN.md#phase-1-tidecloak-up-and-governed-1530-1700).
-The Next.js app comes next.
+Open http://localhost:3000, press **Start Line 3 pressure spike**, and watch Sentinel propose a
+shutdown and then try to execute it directly (refused). Approve as two different operators to run it.
+
+- **TideCloak mode (the real demo):** put your realm's `tidecloak.json` in `controller/`
+  (tide-console → Apps → myclient → Credentials). Operators then sign in with TideCloak, each in their
+  own browser profile. Realm setup (Docker, three admins, `plant-operator` role) is in
+  [`docs/PLAN.md` → Phase 1](docs/PLAN.md#phase-1-tidecloak-up-and-governed-1530-1700).
+- **Rehearsal mode:** without `tidecloak.json`, the demo generates a stand-in realm on your machine
+  and shows a Jo / Kim / Raj switch (each browser tab can be a different person). Practice only.
+
+`npm test` runs the controller tests. API and limits: [`controller/README.md`](controller/README.md).
 
 ## Project documents
 

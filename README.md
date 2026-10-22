@@ -40,9 +40,19 @@ Watch a prompt-injected AI get refused, an admin's self-promotion stall in TideC
 
 ## Setup
 
-<!-- How to install and run the prototype. -->
+Work in progress. What runs today:
 
-Not built yet. The planned setup (TideCloak dev server in Docker, realm with three admins and a `plant-operator` role, then the app, controller and Sentinel) is in [`docs/PLAN.md` → Phase 1](docs/PLAN.md#phase-1-tidecloak-up-and-governed-1530-1700).
+```bash
+# Plant controller (needs tidecloak.json from your realm, or `npm run dev:keys` to rehearse offline)
+cd controller && npm install && npm start      # http://localhost:4000
+
+# Sentinel, the operations AI (no credentials): start a Line 3 spike, propose, try the injected execute
+cd sentinel && npm run demo:inject
+```
+
+Details and the API: [`controller/README.md`](controller/README.md). The TideCloak realm setup
+(Docker, three admins, `plant-operator` role) is in [`docs/PLAN.md` → Phase 1](docs/PLAN.md#phase-1-tidecloak-up-and-governed-1530-1700).
+The Next.js app comes next.
 
 ## Project documents
 

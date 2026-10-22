@@ -1,0 +1,15 @@
+{
+  "name": "sentinel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Scripted operations AI: watches the mock plant and proposes commands. Holds no credentials.",
+  "type": "module",
+  "engines": {
+    "node": ">=20.9"
+  },
+  "scripts": {
+    "start": "node sentinel.js",
+    "demo": "node sentinel.js --spike L3",
+    "demo:inject": "node sentinel.js --spike L3 --inject"
+  }
+}

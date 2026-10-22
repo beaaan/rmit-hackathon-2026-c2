@@ -38,18 +38,31 @@ const tide = {
 
 // sessionStorage is per tab, so two tabs can be two different operators.
 const PERSONA_KEY = "rehearsal-persona";
+// Storage can be unavailable (private windows, embedded previews); the page still works without it.
+const readPersona = () => {
+  try {
+    return sessionStorage.getItem(PERSONA_KEY);
+  } catch {
+    return null;
+  }
+};
 let rehearsalTokens = null;
 
 const rehearsal = {
   mode: "rehearsal",
   personas: ["jo", "kim", "raj"],
   async init() {
-    const res = await fetch("/rehearsal/tokens.json");
-    if (!res.headers.get("content-type")?.includes("json")) {
-      throw new Error("No rehearsal tokens. Run `npm run dev:keys` in controller/ (or `npm run demo` at the repo root).");
+    if (globalThis.__simTokens) {
+      // The shareable preview build: the stand-in realm lives in the page (sim/sim-controller.js).
+      rehearsalTokens = await globalThis.__simTokens();
+    } else {
+      const res = await fetch("/rehearsal/tokens.json");
+      if (!res.headers.get("content-type")?.includes("json")) {
+        throw new Error("No rehearsal tokens. Run `npm run dev:keys` in controller/ (or `npm run demo` at the repo root).");
+      }
+      rehearsalTokens = await res.json();
     }
-    rehearsalTokens = await res.json();
-    const persona = sessionStorage.getItem(PERSONA_KEY);
+    const persona = readPersona();
     return persona && rehearsalTokens[persona] ? sessionFromClaims(decodeJwt(rehearsalTokens[persona])) : null;
   },
   login(persona) {
@@ -62,7 +75,7 @@ const rehearsal = {
   },
   // The story acts as a named person ("Kim approves"); the control room acts as the chosen persona.
   async getToken(persona) {
-    return rehearsalTokens?.[persona ?? sessionStorage.getItem(PERSONA_KEY)] ?? null;
+    return rehearsalTokens?.[persona ?? readPersona()] ?? null;
   },
 };
 

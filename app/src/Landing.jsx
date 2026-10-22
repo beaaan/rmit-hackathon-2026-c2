@@ -8,12 +8,13 @@ import Evidence from "./Evidence.jsx";
 import { kpa } from "./shared.js";
 
 const REPO_URL = "https://github.com/beaaan/rmit-hackathon-2026-c2";
+const P = `${import.meta.env.BASE_URL}photos/`;
 const PHOTO = {
-  hall: "/photos/interior-of-western-pumping-station-geograph-org.jpg",
-  filters: "/photos/view-of-upper-level-of-filtration-room.jpg",
-  basins: "/photos/overall-view-of-flocculation-sedimentation-basins-1778.jpg",
-  backwash: "/photos/backwashing-demo-at-a-water-filtration-plant.webm",
-  backwashPoster: "/photos/backwashing-demo-at-a-water-filtration-plant-poster.jpg",
+  hall: `${P}interior-of-western-pumping-station-geograph-org.jpg`,
+  filters: `${P}view-of-upper-level-of-filtration-room.jpg`,
+  basins: `${P}overall-view-of-flocculation-sedimentation-basins-1778.jpg`,
+  backwash: `${P}backwashing-demo-at-a-water-filtration-plant.webm`,
+  backwashPoster: `${P}backwashing-demo-at-a-water-filtration-plant-poster.jpg`,
 };
 const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 

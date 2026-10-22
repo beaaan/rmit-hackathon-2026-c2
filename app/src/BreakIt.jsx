@@ -91,7 +91,15 @@ export default function BreakIt({ session, refreshAll, ...data }) {
           This is the working prototype, connected to the real controller. See if you can get Line 3's pumps stopped
           without two different operators agreeing: trick the AI, forge an operator's pass, get the admin to approve,
           or approve twice as one person.
-          {AUTH_MODE === "rehearsal" && <span className="muted"> Rehearsal mode: sign-ins come from a stand-in realm on this machine.</span>}
+          {__PREVIEW__ ? (
+            <span className="muted">
+              {" "}
+              This preview runs the controller's code, Sentinel and a stand-in sign-in service inside the page. In the
+              prototype the controller is its own service and operators sign in with TideCloak.
+            </span>
+          ) : (
+            AUTH_MODE === "rehearsal" && <span className="muted"> Rehearsal mode: sign-ins come from a stand-in realm on this machine.</span>
+          )}
         </p>
       </div>
 

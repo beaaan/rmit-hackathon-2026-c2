@@ -32,7 +32,22 @@ function serveJson(route, load) {
   };
 }
 
-export default defineConfig({
+// `vite build --mode artifact` makes the shareable preview: the controller and Sentinel run inside the
+// page (src/sim/sim-controller.js) and every asset path is relative.
+const repoRoot = fileURLToPath(new URL("..", import.meta.url));
+
+export default defineConfig(({ mode }) => mode === "artifact" ? {
+  base: "./",
+  plugins: [react()],
+  resolve: {
+    alias: [
+      { find: /^\.\/controller\.js$/, replacement: fileURLToPath(new URL("./src/sim/sim-controller.js", import.meta.url)) },
+      { find: "node:crypto", replacement: fileURLToPath(new URL("./src/sim/node-crypto.js", import.meta.url)) },
+    ],
+  },
+  define: { __AUTH_MODE__: JSON.stringify("rehearsal"), __CONTROLLER_URL__: JSON.stringify(""), __TIDECLOAK_URL__: JSON.stringify(""), __PREVIEW__: "true" },
+  server: { fs: { allow: [repoRoot] } },
+} : {
   plugins: [
     react(),
     authMode === "tide"
@@ -45,6 +60,7 @@ export default defineConfig({
     __AUTH_MODE__: JSON.stringify(authMode),
     __CONTROLLER_URL__: JSON.stringify(process.env.CONTROLLER_URL ?? "http://localhost:4000"),
     __TIDECLOAK_URL__: JSON.stringify(tidecloak ? `${tidecloak["auth-server-url"].replace(/\/$/, "")}/realms/${tidecloak.realm}` : ""),
+    __PREVIEW__: "false",
   },
   server: { port: 3000, strictPort: true },
   preview: { port: 3000, strictPort: true },
